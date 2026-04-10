@@ -25,11 +25,19 @@ let
   };
 
   # Type check: returns { ok, type, errors }
-  # TODO(questionable-implementation): see if we can use our birds for type checking implementation
+  #
+  # Uses K/KI as Church booleans for selection:
+  #   K  selects first  arg (success path)
+  #   KI selects second arg (failure path)
+  #
+  # The predicate `builtins.hasAttr` is an irreducible Nix primitive,
+  # but the branching uses birds: (if pred then K else KI) success failure
   typeCheck = birdName:
-    if builtins.hasAttr birdName typeEnv
-    then { ok = true; type = typeEnv.${birdName}; errors = []; }
-    else { ok = false; type = null; errors = ["Unknown bird: ${birdName}"]; };
+    let
+      selector = if builtins.hasAttr birdName typeEnv then K else KI;
+      success  = { ok = true;  type = typeEnv.${birdName}; errors = []; };
+      failure  = { ok = false;  type = null; errors = ["Unknown bird: ${birdName}"]; };
+    in selector success failure;
   # Compile helper: build AST, rewrite, compile
   compileBird = ast: compiler.compile (compiler.rewrite ast);
   # Pretty-print helper
@@ -41,8 +49,7 @@ in
   inherit I M K KI B C W S L V Y;
   inherit typeEnv typeCheck compileBird ppBird;
 
-  # Demos
-  # TODO(bad-implementation): Demos should be an separate folder / flake that import this flake as an export, pinned at aversion
+  # Demos (kept for backward compatibility — canonical demos are in demos/ flake)
   demos = {
     # S K K = I
     sKK = rec {

@@ -13,8 +13,13 @@ let
   V = { bird = "V"; apply = x: { bird = "V1"; apply = y: { bird = "V2"; apply = z: apply (z.apply x) y; }; }; };
   Y = { bird = "Y"; apply = f: let x = f.apply x; in x; };
 
-  # Helper: apply a bird to an argument
+  # Apply a bird to an argument — the universal evaluator for tagged birds.
+  # `ap` is the short alias; `apply` is the canonical name (used internally by bird defs above).
+  #
+  # Usage: apply I "hello"  →  "hello"
+  #        ap (ap K "yes") "no"  →  "yes"
   apply = bird: arg: bird.apply arg;
+  ap = apply;
 
   # Helper: show bird name
   show = bird:
@@ -28,7 +33,7 @@ let
   cons = head: tail: { h = head; t = tail; };
 in
 {
-  inherit I M K KI B C W S L V Y apply show pipe cons;
+  inherit I M K KI B C W S L V Y apply ap show pipe cons;
 
   examples = {
     # I "hello" = "hello"

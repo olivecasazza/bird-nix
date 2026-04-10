@@ -64,14 +64,15 @@ This is the single most important directive. Before writing any new code, ask:
 flake.nix                ← Flake entry point (lib, tests, checks)
 src/
   default.nix            ← Unified library entry point
+  ast.nix                ← CANONICAL AST constructors (mkApp, mkVar, mkBird, mkLambda)
   birds.nix              ← CANONICAL source for all combinators
   birds-speech.nix       ← Conversational wrappers (imports birds.nix)
   real-world-birds.nix   ← Practical examples (imports birds.nix)
-  bird-dsl.nix           ← DSL with pipe operator and birdMap (imports birds.nix)
+  bird-dsl.nix           ← DSL with pipe operator (imports birds.nix, compiler for birdMap)
   bird-nix.nix           ← Tagged-union kernel (independent encoding)
-  bird-compiler.nix      ← AST compiler with rewrite rules (imports birds.nix)
-  bird-format.nix        ← Pretty-printer and eta-reducer (standalone AST ops)
-  bird-toolchain.nix     ← Unified toolchain (imports birds.nix, compiler, format)
+  bird-compiler.nix      ← AST compiler, typeEnv, birdMap (imports ast.nix, birds.nix)
+  bird-format.nix        ← Pretty-printer and eta-reducer (imports ast.nix only)
+  bird-toolchain.nix     ← Unified toolchain (imports compiler, format — no local typeEnv)
   bird-pbt.nix           ← Property-based testing framework (imports birds.nix)
   test-harness.nix       ← Test framework built FROM birds (imports birds.nix)
 tests/
@@ -85,18 +86,20 @@ tests/
 ### Dependency DAG
 
 ```
-birds.nix (root — no deps)
+ast.nix (leaf — no deps, CANONICAL AST constructors)
+├── bird-compiler.nix → ast.nix, birds.nix (CANONICAL typeEnv + birdMap)
+│   ├── bird-dsl.nix → birds.nix, bird-compiler.nix (uses compiler.birdMap)
+│   └── bird-toolchain.nix → birds.nix, bird-compiler.nix, bird-format.nix (uses compiler.typeEnv)
+└── bird-format.nix → ast.nix only (standalone AST ops)
+
+birds.nix (leaf — no deps, CANONICAL combinator definitions)
 ├── birds-speech.nix
 ├── real-world-birds.nix
-├── bird-dsl.nix
-├── bird-compiler.nix
 ├── bird-pbt.nix
-├── bird-toolchain.nix → bird-compiler.nix, bird-format.nix
 └── test-harness.nix
     └── tests/*.nix
 
-bird-format.nix (standalone — AST ops only, no runtime combinators)
-bird-nix.nix (standalone — tagged-union encoding)
+bird-nix.nix (standalone — tagged-union encoding, no shared deps)
 ```
 
 ### Flake Interface

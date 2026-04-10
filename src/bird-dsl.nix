@@ -1,5 +1,6 @@
 # Bird Language DSL with pipe operator and combinator mappings
 # Dogfoods birds.nix — all combinators imported, not redefined
+# Imports bird-compiler.nix for birdMap — string→function lookup not redefined here
 { }:
 
 let
@@ -7,20 +8,9 @@ let
   birds = import ./birds.nix {};
   inherit (birds) I M K KI B C W S L V Y;
 
-  # Map string bird names to functions
-  birdMap = {
-    "I" = I;
-    "M" = M;
-    "K" = K;
-    "KI" = KI;
-    "B" = B;
-    "C" = C;
-    "W" = W;
-    "S" = S;
-    "L" = L;
-    "V" = V;
-    "Y" = Y;
-  };
+  # Import canonical string→function bird lookup
+  compiler = import ./bird-compiler.nix {};
+  inherit (compiler) birdMap;
 
   # Helper to apply a bird to input
   say = bird: input: bird input;

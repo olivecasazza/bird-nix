@@ -7,8 +7,8 @@
 # Dogfoods birds.nix — all combinators imported, not redefined.
 #
 # Usage:
-#   nix eval --impure --expr '(import ./blackhole/test-harness.nix {}).summary'
-#   nix eval --impure --expr '(import ./blackhole/test-harness.nix {}).run'
+#   nix eval --impure --expr '(import ./src/test-harness.nix {}).summary'
+#   nix eval --impure --expr '(import ./src/test-harness.nix {}).run'
 { }:
 
 let

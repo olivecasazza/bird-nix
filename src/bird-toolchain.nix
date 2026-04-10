@@ -1,5 +1,6 @@
 # Bird Toolchain - Unified toolchain combining compiler, formatter, type checking, and config builder
 # Dogfoods birds.nix — all combinators imported, not redefined
+# Imports compiler for typeEnv and birdMap — not redefined here
 
 { }:
 let
@@ -9,20 +10,8 @@ let
   compiler = import ./bird-compiler.nix {};
   format = import ./bird-format.nix {};
 
-  # Type environment
-  typeEnv = {
-    I = "a -> a";
-    M = "(a -> a) -> a";
-    K = "a -> b -> a";
-    KI = "a -> b -> b";
-    B = "(b -> c) -> (a -> b) -> a -> c";
-    C = "(a -> b -> c) -> b -> a -> c";
-    W = "(a -> a -> b) -> a -> b";
-    S = "(a -> b -> c) -> (a -> b) -> a -> c";
-    L = "(a -> b -> a) -> a -> b";
-    V = "a -> b -> (a -> b -> c) -> c";
-    Y = "(a -> a) -> a";
-  };
+  # Use the compiler's canonical type environment (single source of truth)
+  inherit (compiler) typeEnv;
 
   # Type check: returns { ok, type, errors }
   #

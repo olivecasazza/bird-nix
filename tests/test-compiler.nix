@@ -58,7 +58,7 @@ let
     (eq "inferType K" (c.inferType (c.mkBird "K")) "a -> b -> a")
     (eq "inferType S" (c.inferType (c.mkBird "S")) "(a -> b -> c) -> (a -> b) -> a -> c")
     (eq "inferType C" (c.inferType (c.mkBird "C")) "(a -> b -> c) -> b -> a -> c")
-    (eq "inferType V" (c.inferType (c.mkBird "V")) "a -> b -> c -> c a b")
+    (eq "inferType V" (c.inferType (c.mkBird "V")) "a -> b -> (a -> b -> c) -> c")
     (eq "inferType App" (c.inferType (c.mkApp (c.mkBird "K") (c.mkBird "S"))) "applied")
   ];
 

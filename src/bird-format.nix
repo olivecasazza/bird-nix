@@ -1,52 +1,53 @@
+# bird-format.nix — Pretty-printer, free variable analysis, and eta-reducer
+# Imports ast.nix — AST constructors are not redefined here
+# Standalone: no dependency on birds.nix (operates on AST nodes only)
 { }:
 
 let
-  # AST helpers
-  mkApp = fn: arg: { op = "App"; inherit fn arg; };
-  mkVar = name: { op = "Var"; inherit name; };
-  mkBird = name: { op = "Bird"; inherit name; };
-  mkLambda = param: body: { op = "Lambda"; inherit param body; };
+  # Import canonical AST constructors
+  ast = import ./ast.nix {};
+  inherit (ast) mkApp mkVar mkBird mkLambda;
 
   # Pretty-printer
-  pp = ast:
-    if ast.op == "Var" then ast.name
-    else if ast.op == "Bird" then ast.name
-    else if ast.op == "Lambda" then "(lambda ${ast.param}. ${pp ast.body})"
-    else if ast.op == "App" then
-      let fnStr = pp ast.fn; argStr = pp ast.arg;
-      in if ast.fn.op == "App" || ast.fn.op == "Lambda"
+  pp = node:
+    if node.op == "Var" then node.name
+    else if node.op == "Bird" then node.name
+    else if node.op == "Lambda" then "(lambda ${node.param}. ${pp node.body})"
+    else if node.op == "App" then
+      let fnStr = pp node.fn; argStr = pp node.arg;
+      in if node.fn.op == "App" || node.fn.op == "Lambda"
          then "(${fnStr}) ${argStr}"
          else "${fnStr} ${argStr}"
     else builtins.throw "Unknown op";
 
   # Free variables
-  freeVars = ast:
-    if ast.op == "Var" then [ast.name]
-    else if ast.op == "Bird" then []
-    else if ast.op == "Lambda" then
-      builtins.filter (x: x != ast.param) (freeVars ast.body)
-    else if ast.op == "App" then
-      (freeVars ast.fn) ++ (freeVars ast.arg)
+  freeVars = node:
+    if node.op == "Var" then [node.name]
+    else if node.op == "Bird" then []
+    else if node.op == "Lambda" then
+      builtins.filter (x: x != node.param) (freeVars node.body)
+    else if node.op == "App" then
+      (freeVars node.fn) ++ (freeVars node.arg)
     else [];
 
   # Eta-reduction
-  etaReduce = ast:
-    if ast.op == "Lambda" then
-      let body = etaReduce ast.body;
+  etaReduce = node:
+    if node.op == "Lambda" then
+      let body = etaReduce node.body;
       in
       # lambda x. f x -> f (if x not in freeVars of f)
       if body.op == "App"
          && body.arg.op == "Var"
-         && body.arg.name == ast.param
-         && !(builtins.elem ast.param (freeVars body.fn))
+         && body.arg.name == node.param
+         && !(builtins.elem node.param (freeVars body.fn))
       then etaReduce body.fn
       # lambda x. x -> I
-      else if body.op == "Var" && body.name == ast.param
+      else if body.op == "Var" && body.name == node.param
       then mkBird "I"
-      else mkLambda ast.param body
-    else if ast.op == "App" then
-      mkApp (etaReduce ast.fn) (etaReduce ast.arg)
-    else ast;
+      else mkLambda node.param body
+    else if node.op == "App" then
+      mkApp (etaReduce node.fn) (etaReduce node.arg)
+    else node;
 
   # Examples
   examples = {

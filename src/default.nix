@@ -15,6 +15,7 @@
 { }:
 
 let
+  ast = import ./ast.nix {};
   birds = import ./birds.nix {};
   compiler = import ./bird-compiler.nix {};
   format = import ./bird-format.nix {};
@@ -65,10 +66,13 @@ in {
   # Real-world usage examples
   inherit examples;
 
+  # AST constructors (canonical source: ast.nix)
+  inherit ast;
+
   # === Convenience Re-exports ===
 
-  # Compiler AST constructors
-  inherit (compiler) mkApp mkVar mkBird mkLambda;
+  # AST constructors at top level
+  inherit (ast) mkApp mkVar mkBird mkLambda;
 
   # Compiler operations
   inherit (compiler) compile rewrite inferType;

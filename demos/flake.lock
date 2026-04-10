@@ -1,0 +1,22 @@
+{
+  "nodes": {
+    "bird-nix": {
+      "locked": {
+        "path": "..",
+        "type": "path"
+      },
+      "original": {
+        "path": "..",
+        "type": "path"
+      },
+      "parent": []
+    },
+    "root": {
+      "inputs": {
+        "bird-nix": "bird-nix"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}

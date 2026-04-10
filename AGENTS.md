@@ -73,8 +73,9 @@ src/
   bird-compiler.nix      ← AST compiler, typeEnv, birdMap (imports ast.nix, birds.nix)
   bird-format.nix        ← Pretty-printer and eta-reducer (imports ast.nix only)
   bird-toolchain.nix     ← Unified toolchain (imports compiler, format — no local typeEnv)
-  bird-pbt.nix           ← Property-based testing framework (imports birds.nix)
-  test-harness.nix       ← Test framework built FROM birds (imports birds.nix)
+  testing/
+    bird-pbt.nix         ← Property-based testing framework (imports birds.nix)
+    test-harness.nix     ← Test framework built FROM birds (imports birds.nix)
 tests/
   test-birds.nix         ← Core combinator + DSL + speech tests
   test-compiler.nix      ← Compiler + formatter tests
@@ -95,9 +96,10 @@ ast.nix (leaf — no deps, CANONICAL AST constructors)
 birds.nix (leaf — no deps, CANONICAL combinator definitions)
 ├── birds-speech.nix
 ├── real-world-birds.nix
-├── bird-pbt.nix
-└── test-harness.nix
-    └── tests/*.nix
+└── testing/
+    ├── bird-pbt.nix
+    └── test-harness.nix
+        └── tests/*.nix
 
 bird-nix.nix (standalone — tagged-union encoding, no shared deps)
 ```

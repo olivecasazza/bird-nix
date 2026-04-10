@@ -6,8 +6,8 @@
 
 { }:
 let
-  h = import ../src/test-harness.nix {};
-  pbt = import ../src/bird-pbt.nix {};
+  h = import ../src/testing/test-harness.nix {};
+  pbt = import ../src/testing/bird-pbt.nix {};
   birds = import ../src/birds.nix {};
   inherit (birds) I M K KI B C W S V Y L;
   inherit (pbt) forAll forAll2 forAll3 property domains;

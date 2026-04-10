@@ -2,7 +2,7 @@
 
 { }:
 let
-  h = import ../src/test-harness.nix {};
+  h = import ../src/testing/test-harness.nix {};
   c = import ../src/bird-compiler.nix {};
   f = import ../src/bird-format.nix {};
 

@@ -3,7 +3,7 @@
 
 { }:
 let
-  h = import ../src/test-harness.nix {};
+  h = import ../src/testing/test-harness.nix {};
   k = import ../src/bird-nix.nix {};
   tc = import ../src/bird-toolchain.nix {};
   rw = import ../src/real-world-birds.nix {};

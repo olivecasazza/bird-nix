@@ -1,6 +1,6 @@
 { }:
 let
-  h = import ../src/test-harness.nix {};
+  h = import ../src/testing/test-harness.nix {};
   birds = import ../src/birds.nix {};
   speech = import ../src/birds-speech.nix {};
   dsl = import ../src/bird-dsl.nix {};

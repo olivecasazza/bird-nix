@@ -14,7 +14,7 @@
 let
   # === BIRD BOOTSTRAP ===
   # Import canonical combinators from birds.nix
-  birds = import ./birds.nix {};
+  birds = import ../birds.nix {};
   inherit (birds) I K KI B W S Y;
 
   # === TEST PRIMITIVES (built from birds) ===

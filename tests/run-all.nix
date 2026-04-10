@@ -2,7 +2,7 @@
 
 { }:
 let
-  h = import ../src/test-harness.nix {};
+  h = import ../src/testing/test-harness.nix {};
   testBirds = import ./test-birds.nix {};
   testCompiler = import ./test-compiler.nix {};
   testKernel = import ./test-kernel.nix {};

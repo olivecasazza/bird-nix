@@ -23,8 +23,8 @@ let
   toolchain = import ./bird-toolchain.nix {};
   kernel = import ./bird-nix.nix {};
   speech = import ./birds-speech.nix {};
-  pbt = import ./bird-pbt.nix {};
-  harness = import ./test-harness.nix {};
+  pbt = import ./testing/bird-pbt.nix {};
+  harness = import ./testing/test-harness.nix {};
   examples = import ./real-world-birds.nix {};
 
 in {

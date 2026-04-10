@@ -17,7 +17,7 @@
 
 let
   # === BIRD BOOTSTRAP ===
-  birds = import ./birds.nix {};
+  birds = import ../birds.nix {};
   inherit (birds) I K KI B W S C V;
 
   # === DETERMINISTIC PRNG ===

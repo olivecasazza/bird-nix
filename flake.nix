@@ -24,7 +24,7 @@
       lib = import ./src;
 
       # Tests — run with: nix eval .#tests.summary --impure --raw
-      tests = import ./tests/run-all.nix { };
+      tests = import ./tests { };
 
       # Individual test suites
       checks = {

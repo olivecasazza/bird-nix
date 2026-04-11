@@ -2,9 +2,10 @@
 
 { }:
 let
-  h = import ../src/testing/test-harness.nix {};
-  c = import ../src/bird-compiler.nix {};
-  f = import ../src/bird-format.nix {};
+  h = import ./test-harness.nix {};
+  bn = import ../src {};
+  c = bn.compiler;
+  f = bn.format;
 
   # Convenience aliases
   eq = h.assertEq;

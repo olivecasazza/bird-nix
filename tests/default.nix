@@ -1,8 +1,9 @@
-# run-all.nix — Combine all test suites
+# tests/default.nix — Combine all test suites
 
 { }:
 let
-  h = import ../src/testing/test-harness.nix {};
+  bn = import ../src {};
+  h = bn.harness;
   testBirds = import ./test-birds.nix {};
   testCompiler = import ./test-compiler.nix {};
   testKernel = import ./test-kernel.nix {};

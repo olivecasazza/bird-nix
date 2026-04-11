@@ -3,7 +3,7 @@
 { }:
 let
   # Import canonical combinator definitions
-  birds = import ./birds.nix {};
+  birds = import ../src/birds.nix {};
   inherit (birds) I M K KI B W L S Y;
   const = K;
 

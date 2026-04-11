@@ -3,79 +3,78 @@
 
 { }:
 let
-  h = import ../src/testing/test-harness.nix {};
-  k = import ../src/bird-nix.nix {};
-  tc = import ../src/bird-toolchain.nix {};
-  rw = import ../src/real-world-birds.nix {};
+  h = import ./test-harness.nix {};
+  bn = import ../src {};
+  rw = import ./real-world-birds.nix {};
 
   # Suite 1: Tagged Birds Structure
   suiteTaggedBirds = h.runSuite "Tagged Birds Structure" [
-    (h.assertEq "k.I.bird == \"I\"" k.I.bird "I")
-    (h.assertEq "k.K.bird == \"K\"" k.K.bird "K")
-    (h.assertEq "k.M.bird == \"M\"" k.M.bird "M")
-    (h.assertEq "k.C.bird == \"C\"" k.C.bird "C")
-    (h.assertEq "k.V.bird == \"V\"" k.V.bird "V")
-    (h.assertTrue "k.I has .apply" (builtins.isFunction k.I.apply))
-    (h.assertTrue "k.K has .apply" (builtins.isFunction k.K.apply))
-    (h.assertTrue "k.M has .apply" (builtins.isFunction k.M.apply))
-    (h.assertTrue "k.C has .apply" (builtins.isFunction k.C.apply))
-    (h.assertTrue "k.V has .apply" (builtins.isFunction k.V.apply))
+    (h.assertEq "bn.kernel.I.bird == \"I\"" bn.kernel.I.bird "I")
+    (h.assertEq "bn.kernel.K.bird == \"K\"" bn.kernel.K.bird "K")
+    (h.assertEq "bn.kernel.M.bird == \"M\"" bn.kernel.M.bird "M")
+    (h.assertEq "bn.kernel.C.bird == \"C\"" bn.kernel.C.bird "C")
+    (h.assertEq "bn.kernel.V.bird == \"V\"" bn.kernel.V.bird "V")
+    (h.assertTrue "bn.kernel.I has .apply" (builtins.isFunction bn.kernel.I.apply))
+    (h.assertTrue "bn.kernel.K has .apply" (builtins.isFunction bn.kernel.K.apply))
+    (h.assertTrue "bn.kernel.M has .apply" (builtins.isFunction bn.kernel.M.apply))
+    (h.assertTrue "bn.kernel.C has .apply" (builtins.isFunction bn.kernel.C.apply))
+    (h.assertTrue "bn.kernel.V has .apply" (builtins.isFunction bn.kernel.V.apply))
   ];
 
   # Suite 2: Tagged Bird Apply
   suiteApply = h.runSuite "Tagged Bird Apply" [
-    (h.assertEq "k.apply k.I \"hello\"" (k.apply k.I "hello") "hello")
-    (h.assertEq "k.apply (k.apply k.K \"yes\") \"no\"" (k.apply (k.apply k.K "yes") "no") "yes")
-    (h.assertEq "k.apply (k.apply k.KI \"yes\") \"no\"" (k.apply (k.apply k.KI "yes") "no") "no")
-    (h.assertEq "S K K = I" (k.apply (k.apply (k.apply k.S k.K) k.K) "test") "test")
-    (h.assertEq "C K flips" (k.apply (k.apply (k.apply k.C k.K) "a") "b") "b")
-    (h.assertEq "V pair with K" (k.apply (k.apply (k.apply k.V "a") "b") k.K) "a")
+    (h.assertEq "bn.kernel.apply bn.kernel.I \"hello\"" (bn.kernel.apply bn.kernel.I "hello") "hello")
+    (h.assertEq "bn.kernel.apply (bn.kernel.apply bn.kernel.K \"yes\") \"no\"" (bn.kernel.apply (bn.kernel.apply bn.kernel.K "yes") "no") "yes")
+    (h.assertEq "bn.kernel.apply (bn.kernel.apply bn.kernel.KI \"yes\") \"no\"" (bn.kernel.apply (bn.kernel.apply bn.kernel.KI "yes") "no") "no")
+    (h.assertEq "S K K = I" (bn.kernel.apply (bn.kernel.apply (bn.kernel.apply bn.kernel.S bn.kernel.K) bn.kernel.K) "test") "test")
+    (h.assertEq "C K flips" (bn.kernel.apply (bn.kernel.apply (bn.kernel.apply bn.kernel.C bn.kernel.K) "a") "b") "b")
+    (h.assertEq "V pair with K" (bn.kernel.apply (bn.kernel.apply (bn.kernel.apply bn.kernel.V "a") "b") bn.kernel.K) "a")
   ];
 
   # Suite 3: show function
   suiteShow = h.runSuite "show function" [
-    (h.assertTrue "k.show k.I returns a string" (builtins.isString (k.show k.I)))
+    (h.assertTrue "bn.kernel.show bn.kernel.I returns a string" (builtins.isString (bn.kernel.show bn.kernel.I)))
   ];
 
   # Suite 4: Kernel examples
   suiteExamples = h.runSuite "Kernel examples" [
-    (h.assertEq "k.examples.identity" k.examples.identity "hello")
-    (h.assertEq "k.examples.kestrelChoice" k.examples.kestrelChoice "yes")
+    (h.assertEq "bn.kernel.examples.identity" bn.kernel.examples.identity "hello")
+    (h.assertEq "bn.kernel.examples.kestrelChoice" bn.kernel.examples.kestrelChoice "yes")
   ];
 
   # Suite 5: Toolchain Type Check
   suiteTypeCheck = h.runSuite "Toolchain Type Check" [
     (let
-      result = tc.typeCheck "I";
-    in h.assertEq "tc.typeCheck \"I\" ok" result.ok true)
+      result = bn.typeCheck "I";
+    in h.assertEq "bn.typeCheck \"I\" ok" result.ok true)
     (let
-      result = tc.typeCheck "I";
-    in h.assertEq "tc.typeCheck \"I\" type" result.type "a -> a")
+      result = bn.typeCheck "I";
+    in h.assertEq "bn.typeCheck \"I\" type" result.type "a -> a")
     (let
-      result = tc.typeCheck "K";
-    in h.assertTrue "tc.typeCheck \"K\" ok" result.ok)
+      result = bn.typeCheck "K";
+    in h.assertTrue "bn.typeCheck \"K\" ok" result.ok)
     (let
-      result = tc.typeCheck "C";
-    in h.assertTrue "tc.typeCheck \"C\" ok" result.ok)
+      result = bn.typeCheck "C";
+    in h.assertTrue "bn.typeCheck \"C\" ok" result.ok)
     (let
-      result = tc.typeCheck "V";
-    in h.assertTrue "tc.typeCheck \"V\" ok" result.ok)
+      result = bn.typeCheck "V";
+    in h.assertTrue "bn.typeCheck \"V\" ok" result.ok)
     (let
-      result = tc.typeCheck "UNKNOWN";
-    in h.assertFalse "tc.typeCheck \"UNKNOWN\" ok" result.ok)
+      result = bn.typeCheck "UNKNOWN";
+    in h.assertFalse "bn.typeCheck \"UNKNOWN\" ok" result.ok)
   ];
 
   # Suite 6: Toolchain Config Example
   suiteConfig = h.runSuite "Toolchain Config Example" [
-    (h.assertEq "tc.configExample.serverName" tc.configExample.serverName "example.com")
-    (h.assertEq "tc.configExample.port" tc.configExample.port 8080)
-    (h.assertEq "tc.configExample.selfRef" tc.configExample.selfRef "nginx")
+    (h.assertEq "bn.toolchain.configExample.serverName" bn.toolchain.configExample.serverName "example.com")
+    (h.assertEq "bn.toolchain.configExample.port" bn.toolchain.configExample.port 8080)
+    (h.assertEq "bn.toolchain.configExample.selfRef" bn.toolchain.configExample.selfRef "nginx")
   ];
 
   # Suite 7: Toolchain Demos
   suiteDemos = h.runSuite "Toolchain Demos" [
-    (h.assertEq "tc.demos.sKK.test" tc.demos.sKK.test "hello")
-    (h.assertTrue "tc.demos.sKK.pretty is a string" (builtins.isString tc.demos.sKK.pretty))
+    (h.assertEq "bn.toolchain.demos.sKK.test" bn.toolchain.demos.sKK.test "hello")
+    (h.assertTrue "bn.toolchain.demos.sKK.pretty is a string" (builtins.isString bn.toolchain.demos.sKK.pretty))
   ];
 
   # Suite 8: Real World Examples

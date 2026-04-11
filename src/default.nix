@@ -1,14 +1,17 @@
 # bird-nix — Combinator library from "To Mock a Mockingbird"
 #
-# Unified entry point. Import this to get everything:
+# Human-readable bird names are the primary API:
 #
-#   bird-nix = import ./src {};
-#   inherit (bird-nix) birds dsl compiler format toolchain kernel speech pbt;
+#   bn = import ./src {};
+#   bn.mockingbird.call f        # self-application
+#   bn.mockingbird.speech        # "If you tell me how to respond..."
+#   bn.kestrel.call "yes" "no"   # → "yes"
+#   bn.pipe 5 [(x: x * 2) (x: x + 1)]  # → 11
 #
-# Or import individual modules:
-#   birds = import ./src/birds.nix {};
+# Single-letter aliases (I, K, S, ...) are available under bn.birds
+# for terse combinator notation when needed.
 #
-# For use as a flake overlay:
+# For use as a flake:
 #   inputs.bird-nix.url = "github:olivecasazza/bird-nix";
 #   # then: bird-nix.lib { }
 
@@ -23,72 +26,36 @@ let
   toolchain = import ./bird-toolchain.nix {};
   kernel = import ./bird-nix.nix {};
   speech = import ./birds-speech.nix {};
-  pbt = import ./testing/bird-pbt.nix {};
-  harness = import ./testing/test-harness.nix {};
-  examples = import ./real-world-birds.nix {};
+  pbt = import ../tests/bird-pbt.nix {};
+  harness = import ../tests/test-harness.nix {};
+  examples = import ../tests/real-world-birds.nix {};
 
 in {
-  # === Core Combinators ===
-  # I M K KI B C L W S V Y — the canonical bird definitions
+  # === Birds (primary API — human-readable names) ===
+  # Each bird has .call (the combinator function) and .speech (description)
+  inherit (speech) identityBird mockingbird kestrel kite bluebird cardinal
+    warbler starling vireo lark sageBird;
+
+  # Bird sentences — conversational descriptions
+  inherit (speech) sentences;
+
+  # === Single-letter aliases (terse notation) ===
+  # Available for internal use / combinator-heavy code
+  # Prefer the human-readable names above for public APIs
   inherit birds;
 
-  # Re-export birds at top level for convenience:
-  #   bird-nix = import ./src {};
-  #   bird-nix.I "hello"  # → "hello"
-  inherit (birds) I M K KI B C L W S V Y;
-
-  # === Modules ===
-
-  # DSL with pipe operator and birdMap
-  inherit dsl;
-
-  # AST compiler with rewrite rules
-  inherit compiler;
-
-  # Pretty-printer, eta-reducer, free variable analysis
-  inherit format;
-
-  # Unified toolchain (compiler + format + type checking)
-  inherit toolchain;
-
-  # Tagged-union kernel (bird-nix.nix)
-  inherit kernel;
-
-  # Conversational wrappers with speech strings
-  inherit speech;
-
-  # Property-based testing framework
-  inherit pbt;
-
-  # Test harness (assertEq, runSuite, combineSuites)
-  inherit harness;
-
-  # Real-world usage examples
-  inherit examples;
-
-  # AST constructors (canonical source: ast.nix)
-  inherit ast;
-
-  # === Convenience Re-exports ===
-
-  # AST constructors at top level
-  inherit (ast) mkApp mkVar mkBird mkLambda;
-
-  # Compiler operations
-  inherit (compiler) compile rewrite inferType;
-
-  # Formatter operations
-  inherit (format) pp freeVars etaReduce;
-
-  # Toolchain operations
-  inherit (toolchain) typeCheck compileBird ppBird typeEnv;
-
-  # DSL operations
+  # === DSL ===
   inherit (dsl) pipe birdMap;
 
-  # PBT operations
-  inherit (pbt) forAll forAll2 forAll3 property checkProperties domains;
+  # === Compiler & Toolchain ===
+  inherit ast compiler format toolchain kernel;
+  inherit (ast) mkApp mkVar mkBird mkLambda;
+  inherit (compiler) compile rewrite inferType;
+  inherit (format) pp freeVars etaReduce;
+  inherit (toolchain) typeCheck compileBird ppBird typeEnv;
 
-  # Test harness operations
+  # === Testing ===
+  inherit pbt harness examples;
+  inherit (pbt) forAll forAll2 forAll3 property checkProperties domains;
   inherit (harness) assertEq assertTrue assertFalse assertPred assertEval assertThrows runSuite combineSuites;
 }

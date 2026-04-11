@@ -7,14 +7,14 @@
 # Dogfoods birds.nix — all combinators imported, not redefined.
 #
 # Usage:
-#   nix eval --impure --expr '(import ./src/test-harness.nix {}).summary'
-#   nix eval --impure --expr '(import ./src/test-harness.nix {}).run'
+#   nix eval --impure --expr '(import ./tests/test-harness.nix {}).summary'
+#   nix eval --impure --expr '(import ./tests/test-harness.nix {}).run'
 { }:
 
 let
   # === BIRD BOOTSTRAP ===
   # Import canonical combinators from birds.nix
-  birds = import ../birds.nix {};
+  birds = import ../src/birds.nix {};
   inherit (birds) I K KI B W S Y;
 
   # === TEST PRIMITIVES (built from birds) ===

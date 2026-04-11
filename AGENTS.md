@@ -73,15 +73,15 @@ src/
   bird-compiler.nix      ← AST compiler, typeEnv, birdMap (imports ast.nix, birds.nix)
   bird-format.nix        ← Pretty-printer and eta-reducer (imports ast.nix only)
   bird-toolchain.nix     ← Unified toolchain (imports compiler, format — no local typeEnv)
-  testing/
-    bird-pbt.nix         ← Property-based testing framework (imports birds.nix)
-    test-harness.nix     ← Test framework built FROM birds (imports birds.nix)
 tests/
+  test-harness.nix       ← Test framework built FROM birds (imports birds.nix)
+  bird-pbt.nix           ← Property-based testing framework (imports birds.nix)
+  real-world-birds.nix   ← Example/fixture code for tests (imports birds.nix)
   test-birds.nix         ← Core combinator + DSL + speech tests
   test-compiler.nix      ← Compiler + formatter tests
   test-kernel.nix        ← Tagged kernel + toolchain + real-world tests
   test-pbt.nix           ← Property-based tests for algebraic laws
-  run-all.nix            ← Aggregator: imports all test files
+  default.nix            ← Aggregator: imports all test suites
 ```
 
 ### Dependency DAG
@@ -95,11 +95,11 @@ ast.nix (leaf — no deps, CANONICAL AST constructors)
 
 birds.nix (leaf — no deps, CANONICAL combinator definitions)
 ├── birds-speech.nix
-├── real-world-birds.nix
-└── testing/
+└── tests/
+    ├── test-harness.nix
     ├── bird-pbt.nix
-    └── test-harness.nix
-        └── tests/*.nix
+    ├── real-world-birds.nix
+    └── test-*.nix
 
 bird-nix.nix (standalone — tagged-union encoding, no shared deps)
 ```
@@ -115,10 +115,14 @@ bird-nix.nix (standalone — tagged-union encoding, no shared deps)
   let
     bn = bird-nix.lib {};
   in {
-    # Use combinators directly
-    example = bn.I "hello";           # → "hello"
-    example2 = bn.K "yes" "no";      # → "yes"
-    example3 = bn.S bn.K bn.K 42;    # → 42
+    # Human-readable bird names (primary API)
+    example = bn.kestrel.call "yes" "no";      # → "yes"
+    intro   = bn.kestrel.speech;               # → "I always keep the first..."
+    example2 = bn.mockingbird.call (x: x);     # self-application
+    example3 = bn.identityBird.call "hello";   # → "hello"
+
+    # Single-letter aliases available under bn.birds
+    terse = bn.birds.S bn.birds.K bn.birds.K 42;  # → 42
 
     # Use the compiler
     compiled = bn.compile (bn.mkBird "I");

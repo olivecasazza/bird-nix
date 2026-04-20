@@ -133,6 +133,16 @@ let
         + (if failed > 0 then " (${toString failed} FAILED)" else " ALL PASSED"))
         "═══════════════════════════════════════════"
       ]);
+      # Structured JSON for CI — contains only serializable fields
+      json = builtins.toJSON {
+        inherit name total passed failed;
+        ok = (failed == 0);
+        suites = builtins.map (s: {
+          inherit (s) name total passed failed;
+          ok = s.ok;
+          failureMessages = s.failureMessages or [];
+        }) suites;
+      };
     };
 
 in {

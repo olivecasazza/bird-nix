@@ -1,0 +1,7 @@
+[profile.ci]
+# Emit JUnit XML for CI test reporting
+failure-output = "immediate-final"
+status-level = "all"
+
+[profile.ci.junit]
+path = "junit.xml"

@@ -26,6 +26,8 @@ let
   toolchain = import ./bird-toolchain.nix {};
   kernel = import ./bird-nix.nix {};
   speech = import ./birds-speech.nix {};
+  graphLib = import ./graph.nix {};
+  graphCombinators = import ./graph-combinators.nix { graph = graphLib; };
   pbt = import ../tests/bird-pbt.nix {};
   harness = import ../tests/test-harness.nix {};
   examples = import ../tests/real-world-birds.nix {};
@@ -53,6 +55,18 @@ in {
   inherit (compiler) compile rewrite inferType;
   inherit (format) pp freeVars etaReduce;
   inherit (toolchain) typeCheck compileBird ppBird typeEnv;
+
+  # === Graph ===
+  inherit graphLib graphCombinators;
+  inherit (graphLib) emptyGraph addNode addEdge removeNode removeEdge
+    getNodeIds getEdgeIds nodeCount edgeCount hasNode hasEdge getNode getEdge
+    neighbors inNeighbors degree merge isEmpty isSubgraphOf fromEdgeList
+    toGraphJSON;
+  inherit (graphCombinators) identityGraph constGraph edgePair composeOps
+    parallelMerge flipOps dupArg makeSelfLoop
+    pathGen starGen completeGen cycleGen gridGen
+    subdivideRule hubRule contractRule reverseEdgesRule
+    graphIdentity warblerKestrelIdentity gclTypeEnv graphSpeech;
 
   # === Testing ===
   inherit pbt harness examples;

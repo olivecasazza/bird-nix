@@ -1,0 +1,14 @@
+[build]
+dist = "dist"
+
+# Copy the Nix-generated bird metadata into the dist
+[[build.copy]]
+src = "bird-data.json"
+
+[watch]
+watch = ["src", "index.html", "bird-data.json"]
+
+[serve]
+address = "127.0.0.1"
+port = 8080
+open = false

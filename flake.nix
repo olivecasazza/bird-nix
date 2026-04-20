@@ -32,6 +32,7 @@
         compiler = import ./tests/test-compiler.nix { };
         kernel = import ./tests/test-kernel.nix { };
         pbt = import ./tests/test-pbt.nix { };
+        graph = import ./tests/test-graph.nix { };
       };
     };
 }

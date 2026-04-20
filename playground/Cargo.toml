@@ -1,0 +1,26 @@
+[package]
+name = "bird-playground"
+version = "0.1.0"
+edition = "2021"
+description = "Browser-based playground for bird-nix — real Nix evaluation via tvix"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+wasm-bindgen = "=0.2.114"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+web-sys = { version = "=0.3.91", features = [
+  "console",
+] }
+
+# tvix-eval: the real Nix evaluator, compiled to WASM.
+# no-default-features disables "impure", "arbitrary", "nix_tests".
+# Pin to a known-good commit on the canon branch.
+tvix-eval = { git = "https://github.com/tvlfyi/tvix.git", rev = "1becae0", default-features = false }
+bytes = "1"
+
+[profile.release]
+opt-level = 's'
+lto = true

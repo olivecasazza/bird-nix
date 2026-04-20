@@ -1,0 +1,266 @@
+[
+  {
+    "category": "Core Birds",
+    "name": "I \u2014 Identity",
+    "description": "Identity bird returns its argument unchanged: I x = x",
+    "file": "i-identity.nix"
+  },
+  {
+    "category": "Core Birds",
+    "name": "K \u2014 Kestrel",
+    "description": "Kestrel keeps the first, discards the second: K x y = x",
+    "file": "k-kestrel.nix"
+  },
+  {
+    "category": "Core Birds",
+    "name": "KI \u2014 Kite",
+    "description": "Kite discards the first, keeps the second: KI x y = y",
+    "file": "ki-kite.nix"
+  },
+  {
+    "category": "Core Birds",
+    "name": "M \u2014 Mockingbird",
+    "description": "Mockingbird self-applies: M f = f f. M I = I I = I",
+    "file": "m-mockingbird.nix"
+  },
+  {
+    "category": "Core Birds",
+    "name": "B \u2014 Bluebird (Compose)",
+    "description": "Bluebird composes functions: B f g x = f (g x). Here: (5*2)+1 = 11",
+    "file": "b-bluebird-compose.nix"
+  },
+  {
+    "category": "Core Birds",
+    "name": "C \u2014 Cardinal (Flip)",
+    "description": "Cardinal flips arguments: C f x y = f y x",
+    "file": "c-cardinal-flip.nix"
+  },
+  {
+    "category": "Core Birds",
+    "name": "W \u2014 Warbler (Duplicate)",
+    "description": "Warbler duplicates: W f x = f x x. Here: 5 + 5 = 10",
+    "file": "w-warbler-duplicate.nix"
+  },
+  {
+    "category": "Core Birds",
+    "name": "S \u2014 Starling (Fork)",
+    "description": "Starling forks: S f g x = f x (g x). Here: 3 + (3*2) = 9",
+    "file": "s-starling-fork.nix"
+  },
+  {
+    "category": "Core Birds",
+    "name": "V \u2014 Vireo (Pair)",
+    "description": "Vireo pairs: V x y f = f x y. Use K to extract first, KI for second",
+    "file": "v-vireo-pair.nix"
+  },
+  {
+    "category": "Core Birds",
+    "name": "L \u2014 Lark",
+    "description": "Lark: L f g = f (g g). Combines composition with self-application",
+    "file": "l-lark.nix"
+  },
+  {
+    "category": "Core Birds",
+    "name": "Y \u2014 Sage (Fixpoint)",
+    "description": "Y combinator: Y f = f (Y f). Enables recursion without explicit self-reference",
+    "file": "y-sage-fixpoint.nix"
+  },
+  {
+    "category": "Algebraic Laws",
+    "name": "S K K = I",
+    "description": "S K K reduces to identity. Proof: S K K x = K x (K x) = x",
+    "file": "s-k-k-i.nix"
+  },
+  {
+    "category": "Algebraic Laws",
+    "name": "W K = I",
+    "description": "W K x = K x x = x. Warbler-Kestrel is another Identity encoding",
+    "file": "w-k-i.nix"
+  },
+  {
+    "category": "Algebraic Laws",
+    "name": "M I = I",
+    "description": "M I = I I = I. Mockingbird-Identity stays identity",
+    "file": "m-i-i.nix"
+  },
+  {
+    "category": "Algebraic Laws",
+    "name": "B f I = f",
+    "description": "Right identity of composition: composing with identity is a no-op",
+    "file": "b-f-i-f.nix"
+  },
+  {
+    "category": "Algebraic Laws",
+    "name": "B I f = f",
+    "description": "Left identity of composition: identity composed with f is still f",
+    "file": "b-i-f-f.nix"
+  },
+  {
+    "category": "Algebraic Laws",
+    "name": "C K = KI",
+    "description": "C K x y = K y x = y. Cardinal-Kestrel = Kite",
+    "file": "c-k-ki.nix"
+  },
+  {
+    "category": "Algebraic Laws",
+    "name": "V pair selectors",
+    "description": "V x y K = x, V x y KI = y \u2014 Vireo pairs with Kestrel/Kite select elements",
+    "file": "v-pair-selectors.nix"
+  },
+  {
+    "category": "Church Encodings",
+    "name": "Church Booleans",
+    "description": "true = K (select first), false = KI (select second), not = C (flip)",
+    "file": "church-booleans.nix"
+  },
+  {
+    "category": "Church Encodings",
+    "name": "Church Numerals",
+    "description": "Numbers as repeated function application: n f x = f^n(x)",
+    "file": "church-numerals.nix"
+  },
+  {
+    "category": "Church Encodings",
+    "name": "Church Pairs (Vireo)",
+    "description": "Pairs built from V, linked list from nested pairs",
+    "file": "church-pairs-vireo.nix"
+  },
+  {
+    "category": "Real Nix",
+    "name": "Birds as data",
+    "description": "Wrap bird combinators in attribute sets with metadata",
+    "file": "birds-as-data.nix"
+  },
+  {
+    "category": "Real Nix",
+    "name": "Pipeline with B",
+    "description": "Chain transformations using bluebird composition",
+    "file": "pipeline-with-b.nix"
+  },
+  {
+    "category": "Real Nix",
+    "name": "Map with combinators",
+    "description": "Use S and K to build map/filter from scratch",
+    "file": "map-with-combinators.nix"
+  },
+  {
+    "category": "Real Nix",
+    "name": "Recursive factorial (Y)",
+    "description": "Y combinator enables anonymous recursion \u2014 no let rec needed",
+    "file": "recursive-factorial-y.nix"
+  },
+  {
+    "category": "Library",
+    "name": "Import birds.nix",
+    "description": "Import the canonical bird definitions directly",
+    "file": "import-birds-nix.nix"
+  },
+  {
+    "category": "Library",
+    "name": "Bird speech",
+    "description": "Each bird has a personality and explains what it does",
+    "file": "bird-speech.nix"
+  },
+  {
+    "category": "Library",
+    "name": "Full library",
+    "description": "Import the entire bird-nix library with all modules",
+    "file": "full-library.nix"
+  },
+  {
+    "category": "GCL Generators",
+    "name": "Path graph",
+    "description": "Generate a linear chain: n0 \u2192 n1 \u2192 n2 \u2192 n3 \u2192 n4",
+    "file": "path-graph.nix"
+  },
+  {
+    "category": "GCL Generators",
+    "name": "Star graph",
+    "description": "Hub-and-spoke: center node connected to all spokes",
+    "file": "star-graph.nix"
+  },
+  {
+    "category": "GCL Generators",
+    "name": "Complete graph",
+    "description": "Every node connected to every other node (K\u2084)",
+    "file": "complete-graph.nix"
+  },
+  {
+    "category": "GCL Generators",
+    "name": "Cycle graph",
+    "description": "Path with last node looping back to first",
+    "file": "cycle-graph.nix"
+  },
+  {
+    "category": "GCL Generators",
+    "name": "Grid graph",
+    "description": "2D lattice \u2014 each node connects right and down",
+    "file": "grid-graph.nix"
+  },
+  {
+    "category": "GCL Rewrites",
+    "name": "Subdivide edge",
+    "description": "Replace edge a\u2192b with a\u2192mid\u2192b (insert intermediate node)",
+    "file": "subdivide-edge.nix"
+  },
+  {
+    "category": "GCL Rewrites",
+    "name": "Hub rule",
+    "description": "Add a central hub connected bidirectionally to all existing nodes",
+    "file": "hub-rule.nix"
+  },
+  {
+    "category": "GCL Rewrites",
+    "name": "Reverse edges",
+    "description": "Flip all directed edges (the Cardinal transformation)",
+    "file": "reverse-edges.nix"
+  },
+  {
+    "category": "GCL Rewrites",
+    "name": "Compose transforms",
+    "description": "B (Bluebird) composes graph transformations sequentially",
+    "file": "compose-transforms.nix"
+  },
+  {
+    "category": "GCL Real-World",
+    "name": "Social network",
+    "description": "Friend graph with metadata \u2014 translated from social_network.ggl",
+    "file": "social-network.nix"
+  },
+  {
+    "category": "GCL Real-World",
+    "name": "Neural network layers",
+    "description": "Input \u2192 Hidden \u2192 Output layer connectivity \u2014 from neural_network.ggl",
+    "file": "neural-network-layers.nix"
+  },
+  {
+    "category": "GCL Real-World",
+    "name": "HPC cluster topology",
+    "description": "GPU/CPU compute nodes with scheduler \u2014 from hpc_network.ggl",
+    "file": "hpc-cluster-topology.nix"
+  },
+  {
+    "category": "GCL Real-World",
+    "name": "Quantum circuit",
+    "description": "Qubits and gates with entanglement edges \u2014 from quantum_circuit.ggl",
+    "file": "quantum-circuit.nix"
+  },
+  {
+    "category": "GCL Real-World",
+    "name": "Toroidal mesh",
+    "description": "6\u00d76 torus network with wrap-around edges \u2014 from toroidal_mesh.ggl",
+    "file": "toroidal-mesh.nix"
+  },
+  {
+    "category": "GCL Real-World",
+    "name": "Protein interaction network",
+    "description": "p53/MDM2/ATM signaling pathway \u2014 from protein_network.ggl",
+    "file": "protein-interaction-network.nix"
+  },
+  {
+    "category": "GCL Real-World",
+    "name": "Chemical reaction graph",
+    "description": "H\u2082 + O\u2082 \u2192 H\u2082O catalyzed by Pt \u2014 from chemical_reaction.ggl",
+    "file": "chemical-reaction-graph.nix"
+  }
+]

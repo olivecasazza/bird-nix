@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>bird-nix playground</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;600&display=swap" rel="stylesheet" />
+  <link data-trunk rel="rust" data-wasm-opt="s" />
+  <style>
+    :root {
+      --bg: #121e2a;
+      --bg2: #1e3140;
+      --bg3: #000000;
+      --surface: #2b495a;
+      --overlay: #346276;
+      --text: #d1d5db;
+      --subtext: #9ca3af;
+      --blue: #5dcdbe;
+      --green: #23af93;
+      --peach: #e4786a;
+      --red: #d45547;
+      --mauve: #d9b94c;
+      --yellow: #f0dd7d;
+      --teal: #98e7e1;
+      --font: 'Inconsolata', 'JetBrains Mono', monospace;
+      --radius: 8px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg3);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 14px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ──────────────────────────────── */
+    header {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--surface);
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-shrink: 0;
+    }
+    header h1 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--blue);
+      white-space: nowrap;
+    }
+    header h1 span { color: var(--mauve); }
+    .engine-badge {
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 3px;
+      background: var(--surface);
+      color: var(--teal);
+      white-space: nowrap;
+    }
+
+    /* ── Tabs ────────────────────────────────── */
+    .tabs {
+      display: flex;
+      gap: 2px;
+      background: var(--bg3);
+      border-radius: var(--radius);
+      padding: 2px;
+    }
+    .tab {
+      padding: 6px 16px;
+      border: none;
+      background: transparent;
+      color: var(--subtext);
+      font-family: var(--font);
+      font-size: 13px;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: all 0.15s;
+    }
+    .tab:hover { color: var(--text); background: var(--surface); }
+    .tab.active { color: var(--blue); background: var(--surface); }
+
+    /* ── Demo sidebar ──────────────────────────── */
+    .demo-sidebar {
+      width: 220px;
+      min-width: 220px;
+      background: var(--bg2);
+      border-right: 1px solid var(--surface);
+      overflow-y: auto;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .demo-sidebar.hidden { display: none; }
+    .demo-sidebar-header {
+      padding: 8px 12px;
+      font-size: 11px;
+      color: var(--subtext);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--surface);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .demo-sidebar-header button {
+      background: none; border: none; color: var(--overlay);
+      cursor: pointer; font-size: 14px; padding: 0 2px;
+    }
+    .demo-sidebar-header button:hover { color: var(--text); }
+    .demo-category {
+      border-bottom: 1px solid var(--surface);
+    }
+    .demo-category-label {
+      padding: 6px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--mauve);
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .demo-category-label:hover { color: var(--blue); }
+    .demo-category-label .arrow {
+      font-size: 9px;
+      transition: transform 0.15s;
+      color: var(--overlay);
+    }
+    .demo-category.collapsed .arrow { transform: rotate(-90deg); }
+    .demo-category.collapsed .demo-items { display: none; }
+    .demo-items { }
+    .demo-btn {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 5px 12px 5px 20px;
+      border: none;
+      background: transparent;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.12s;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .demo-btn:hover { background: var(--surface); color: var(--blue); }
+    .demo-btn.active { background: var(--surface); color: var(--blue); border-left: 2px solid var(--blue); padding-left: 18px; }
+
+    /* ── Main content ────────────────────────── */
+    main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+    /* ── Editor View (split) ─────────────────── */
+    .editor-view {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+    .editor-view.hidden { display: none; }
+    .editor-pane {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .editor-pane + .editor-pane { border-left: 2px solid var(--surface); }
+    .pane-header {
+      background: var(--bg2);
+      padding: 6px 12px;
+      font-size: 12px;
+      color: var(--subtext);
+      border-bottom: 1px solid var(--surface);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .pane-header .tag {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      background: var(--surface);
+    }
+    .pane-header .tag.type { color: var(--teal); }
+    .editor-container { flex: 1; overflow: hidden; }
+
+    /* ── REPL View ───────────────────────────── */
+    .repl-view {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--bg);
+    }
+    .repl-view.hidden { display: none; }
+    .repl-output {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 16px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .repl-line { margin-bottom: 4px; }
+    .repl-line.input { color: var(--blue); }
+    .repl-line.input::before { content: 'nix> '; color: var(--mauve); }
+    .repl-line.result { color: var(--green); padding-left: 24px; }
+    .repl-line.error { color: var(--red); padding-left: 24px; }
+    .repl-line.welcome { color: var(--subtext); font-style: italic; margin-bottom: 12px; }
+    .repl-input-row {
+      display: flex;
+      align-items: center;
+      border-top: 1px solid var(--surface);
+      background: var(--bg2);
+      padding: 0 16px;
+      flex-shrink: 0;
+    }
+    .repl-prompt {
+      color: var(--mauve);
+      font-size: 14px;
+      padding-right: 8px;
+      user-select: none;
+    }
+    .repl-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 14px;
+      padding: 12px 0;
+      outline: none;
+    }
+    .repl-input::placeholder { color: var(--overlay); }
+
+    /* ── Status bar ──────────────────────────── */
+    footer {
+      background: var(--bg2);
+      border-top: 1px solid var(--surface);
+      padding: 4px 16px;
+      font-size: 11px;
+      color: var(--subtext);
+      display: flex;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    footer .status-ready { color: var(--green); }
+    footer .status-error { color: var(--red); }
+
+    /* ── Run button ──────────────────────────── */
+    .run-btn {
+      padding: 6px 14px;
+      border: 1px solid var(--green);
+      background: transparent;
+      color: var(--green);
+      font-family: var(--font);
+      font-size: 12px;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.15s;
+    }
+    .run-btn:hover { background: var(--green); color: var(--bg3); }
+
+    /* ── Scrollbar ────────────────────────────── */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--overlay); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--subtext); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🐦 bird<span>-nix</span> playground</h1>
+    <span class="engine-badge">tvix-eval · real Nix in WASM</span>
+    <div class="tabs">
+      <button class="tab active" id="tab-editor" onclick="switchTab('editor')">Editor</button>
+      <button class="tab" id="tab-repl" onclick="switchTab('repl')">REPL</button>
+    </div>
+    <div style="flex:1"></div>
+    <button class="run-btn" id="run-btn" onclick="runEval()">▶ Evaluate (Ctrl+Enter)</button>
+  </header>
+
+  <main>
+    <!-- Editor: side-by-side with demo sidebar -->
+    <div class="editor-view" id="editor-view">
+      <div class="demo-sidebar" id="demo-sidebar"></div>
+      <div class="editor-pane">
+        <div class="pane-header">
+          <span>input.nix</span>
+          <span class="tag">nix expression</span>
+        </div>
+        <div class="editor-container" id="editor-input"></div>
+      </div>
+      <div class="editor-pane">
+        <div class="pane-header">
+          <span>output</span>
+          <span class="tag type" id="output-type">—</span>
+        </div>
+        <div class="editor-container" id="editor-output"></div>
+      </div>
+    </div>
+
+    <!-- REPL -->
+    <div class="repl-view hidden" id="repl-view">
+      <div class="repl-output" id="repl-output">
+        <div class="repl-line welcome">Welcome to the bird-nix REPL — real Nix evaluation powered by tvix.</div>
+        <div class="repl-line welcome">The bird-nix prelude is loaded: I M K KI B C W S L V Y are in scope.</div>
+        <div class="repl-line welcome">Try: K "yes" "no" · S K K "hello" · V "a" "b" K · import ./birds.nix {}</div>
+      </div>
+      <div class="repl-input-row">
+        <span class="repl-prompt">nix&gt;</span>
+        <input class="repl-input" id="repl-input" type="text"
+               placeholder="K &quot;yes&quot; &quot;no&quot;" autofocus
+               onkeydown="if(event.key==='Enter')replEval()" />
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <span id="status"><span class="status-ready">●</span> loading WASM…</span>
+    <span>bird-nix playground v0.2 — real Nix via tvix-eval · combinatory logic from "To Mock a Mockingbird"</span>
+  </footer>
+
+  <!-- Monaco from CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs/loader.min.js"></script>
+  <script>
+    // ── State ────────────────────────────────────────────────────
+    let inputEditor = null;
+    let outputEditor = null;
+    let replHistory = [];
+    let replHistoryIdx = -1;
+
+    // ── WASM init ────────────────────────────────────────────────
+    function waitForWasm(cb, attempts) {
+      attempts = attempts || 0;
+      if (window.wasmBindings && window.wasmBindings.nix_eval) {
+        window.nix_eval = window.wasmBindings.nix_eval;
+        window.nix_eval_raw = window.wasmBindings.nix_eval_raw;
+        window.nix_validate = window.wasmBindings.nix_validate;
+        window.nix_demos = window.wasmBindings.nix_demos;
+        cb();
+      } else if (attempts < 100) {
+        setTimeout(() => waitForWasm(cb, attempts + 1), 50);
+      } else {
+        document.getElementById('status').innerHTML =
+          '<span class="status-error">●</span> WASM failed to load';
+      }
+    }
+
+    // ── Monaco setup ─────────────────────────────────────────────
+    require.config({
+      paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs' }
+    });
+
+    require(['vs/editor/editor.main'], function () {
+      // Register Nix language for Monaco
+      monaco.languages.register({ id: 'nix' });
+      monaco.languages.setMonarchTokensProvider('nix', {
+        keywords: ['let', 'in', 'rec', 'with', 'inherit', 'if', 'then', 'else',
+                   'assert', 'or', 'import', 'builtins', 'true', 'false', 'null'],
+        birds: ['I', 'M', 'K', 'KI', 'B', 'C', 'L', 'W', 'S', 'V', 'Y'],
+        tokenizer: {
+          root: [
+            [/#.*$/, 'comment'],
+            [/\/\*/, 'comment', '@comment'],
+            [/"/, 'string', '@string'],
+            [/''/, 'string', '@indentedString'],
+            [/\d+\.\d+/, 'number.float'],
+            [/\d+/, 'number'],
+            [/\.\/[a-zA-Z0-9._\/-]+/, 'string.path'],
+            [/[A-Z][A-Z]*/, {
+              cases: {
+                '@birds': 'keyword.bird',
+                '@default': 'identifier',
+              }
+            }],
+            [/[a-zA-Z_][a-zA-Z0-9_'-]*/, {
+              cases: {
+                '@keywords': 'keyword',
+                '@default': 'identifier',
+              }
+            }],
+            [/[{}()\[\]]/, 'bracket'],
+            [/[=;:@,?]/, 'delimiter'],
+            [/->|\/\/|\+\+|==|!=|<=|>=|&&|\|\||!/, 'operator'],
+            [/[+\-*\/]/, 'operator'],
+            [/\\/, 'operator.lambda'],
+          ],
+          comment: [
+            [/\*\//, 'comment', '@pop'],
+            [/./, 'comment'],
+          ],
+          string: [
+            [/\$\{/, 'string.interpolation', '@interpolation'],
+            [/[^"$]+/, 'string'],
+            [/"/, 'string', '@pop'],
+            [/./, 'string'],
+          ],
+          indentedString: [
+            [/\$\{/, 'string.interpolation', '@interpolation'],
+            [/[^'$]+/, 'string'],
+            [/''/, 'string', '@pop'],
+            [/./, 'string'],
+          ],
+          interpolation: [
+            [/\}/, 'string.interpolation', '@pop'],
+            { include: 'root' },
+          ],
+        }
+      });
+
+      monaco.languages.setLanguageConfiguration('nix', {
+        comments: { lineComment: '#', blockComment: ['/*', '*/'] },
+        brackets: [['(', ')'], ['{', '}'], ['[', ']']],
+        autoClosingPairs: [
+          { open: '(', close: ')' },
+          { open: '{', close: '}' },
+          { open: '[', close: ']' },
+          { open: '"', close: '"' },
+          { open: "''", close: "''" },
+        ],
+        surroundingPairs: [
+          { open: '(', close: ')' },
+          { open: '{', close: '}' },
+          { open: '[', close: ']' },
+          { open: '"', close: '"' },
+        ],
+        indentationRules: {
+          increaseIndentPattern: /^\s*(let|if|then|else|rec\s*\{|\{|\[).*$/,
+          decreaseIndentPattern: /^\s*(in|else|\}|\]).*$/,
+        },
+      });
+
+      // ── Load Nix-generated bird metadata ────────────────────
+      window.birdData = null;
+      fetch('bird-data.json')
+        .then(r => r.json())
+        .then(data => {
+          window.birdData = data;
+          window.birdByName = {};
+          data.birdList.forEach(b => { window.birdByName[b.name] = b; });
+        })
+        .catch(e => console.warn('bird-data.json not loaded:', e));
+
+      // ── Completion provider (birds + Nix keywords) ──────────
+      monaco.languages.registerCompletionItemProvider('nix', {
+        triggerCharacters: [],
+        provideCompletionItems: function (model, position) {
+          const word = model.getWordUntilPosition(position);
+          const range = {
+            startLineNumber: position.lineNumber,
+            startColumn: word.startColumn,
+            endLineNumber: position.lineNumber,
+            endColumn: word.endColumn,
+          };
+
+          const suggestions = [];
+
+          // Bird combinators from Nix data
+          if (window.birdData) {
+            window.birdData.birdList.forEach(b => {
+              suggestions.push({
+                label: b.name,
+                kind: monaco.languages.CompletionItemKind.Function,
+                detail: b.aka + '  ::  ' + b.type,
+                documentation: {
+                  value: '**' + b.aka + '**\n\n`' + b.type + '`\n\n' +
+                         '```\n' + b.rule + '\n```\n\n' +
+                         b.description + '\n\n> *' + b.speech + '*'
+                },
+                insertText: b.name,
+                range: range,
+                sortText: '0' + b.name,
+              });
+            });
+          }
+
+          // Nix keywords
+          ['let', 'in', 'rec', 'with', 'inherit', 'if', 'then', 'else',
+           'assert', 'import', 'builtins', 'true', 'false', 'null'].forEach(kw => {
+            suggestions.push({
+              label: kw,
+              kind: monaco.languages.CompletionItemKind.Keyword,
+              insertText: kw,
+              range: range,
+              sortText: '1' + kw,
+            });
+          });
+
+          // Common snippets
+          suggestions.push({
+            label: 'let-in',
+            kind: monaco.languages.CompletionItemKind.Snippet,
+            detail: 'let ... in ...',
+            insertText: 'let\n  ${1:name} = ${2:value};\nin\n  ${3:body}',
+            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+            range: range,
+            sortText: '2let',
+          });
+          suggestions.push({
+            label: 'import-birds',
+            kind: monaco.languages.CompletionItemKind.Snippet,
+            detail: 'Import bird-nix library',
+            insertText: 'let\n  birds = import ./birds.nix {};\n  inherit (birds) ${1:I M K KI B C W S V Y};\nin\n  ${2:body}',
+            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+            range: range,
+            sortText: '2import',
+          });
+
+          return { suggestions };
+        }
+      });
+
+      // ── Hover provider (bird info from Nix data) ────────────
+      monaco.languages.registerHoverProvider('nix', {
+        provideHover: function (model, position) {
+          if (!window.birdByName) return null;
+          const word = model.getWordAtPosition(position);
+          if (!word) return null;
+          const info = window.birdByName[word.word];
+          if (!info) return null;
+          return {
+            range: new monaco.Range(
+              position.lineNumber, word.startColumn,
+              position.lineNumber, word.endColumn
+            ),
+            contents: [
+              { value: '**' + info.aka + '** (`' + info.name + '`)' },
+              { value: '```\n' + info.rule + '\n```' },
+              { value: '`' + info.type + '`' },
+              { value: info.description },
+              { value: '> *' + info.speech + '*' },
+            ],
+          };
+        }
+      });
+
+      // bird-nix theme (info site palette)
+      monaco.editor.defineTheme('birdnix', {
+        base: 'vs-dark',
+        inherit: true,
+        rules: [
+          { token: 'keyword', foreground: 'd9b94c' },
+          { token: 'keyword.bird', foreground: 'f0dd7d', fontStyle: 'bold' },
+          { token: 'identifier', foreground: 'd1d5db' },
+          { token: 'string', foreground: '23af93' },
+          { token: 'string.path', foreground: '5dcdbe' },
+          { token: 'string.interpolation', foreground: 'd45547' },
+          { token: 'number', foreground: 'e4786a' },
+          { token: 'number.float', foreground: 'e4786a' },
+          { token: 'operator', foreground: '98e7e1' },
+          { token: 'operator.lambda', foreground: 'd45547', fontStyle: 'bold' },
+          { token: 'delimiter', foreground: '9ca3af' },
+          { token: 'bracket', foreground: 'f0dd7d' },
+          { token: 'comment', foreground: '6b7280', fontStyle: 'italic' },
+        ],
+        colors: {
+          'editor.background': '#121e2a',
+          'editor.foreground': '#d1d5db',
+          'editor.lineHighlightBackground': '#2b495a',
+          'editorCursor.foreground': '#d9b94c',
+          'editor.selectionBackground': '#346276',
+          'editorLineNumber.foreground': '#6b7280',
+          'editorLineNumber.activeForeground': '#d1d5db',
+          'editorWidget.background': '#1e3140',
+          'editorWidget.border': '#2b495a',
+        }
+      });
+
+      const editorOpts = {
+        language: 'nix',
+        theme: 'birdnix',
+        fontFamily: "'Inconsolata', 'JetBrains Mono', monospace",
+        fontSize: 15,
+        lineNumbers: 'on',
+        minimap: { enabled: false },
+        scrollBeyondLastLine: false,
+        wordWrap: 'on',
+        padding: { top: 12 },
+        renderLineHighlight: 'line',
+        lineHeight: 22,
+        tabSize: 2,
+        bracketPairColorization: { enabled: true },
+        smoothScrolling: true,
+        cursorBlinking: 'smooth',
+        cursorSmoothCaretAnimation: 'on',
+      };
+
+      const defaultCode = [
+        '# bird-nix playground — real Nix evaluation in the browser',
+        '# The bird combinators (I, M, K, KI, B, C, W, S, L, V, Y) are preloaded.',
+        '# Press Ctrl+Enter to evaluate.',
+        '',
+        '# Kestrel: always returns the first argument',
+        'K "yes" "no"',
+      ].join('\n');
+
+      inputEditor = monaco.editor.create(
+        document.getElementById('editor-input'),
+        { ...editorOpts, value: defaultCode }
+      );
+
+      outputEditor = monaco.editor.create(
+        document.getElementById('editor-output'),
+        { ...editorOpts, readOnly: true, value: '# Output will appear here\n' }
+      );
+
+      // Ctrl+Enter to run
+      inputEditor.addCommand(
+        monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter,
+        () => runEval()
+      );
+
+      // Resize handler
+      window.addEventListener('resize', () => {
+        inputEditor.layout();
+        outputEditor.layout();
+      });
+
+      // ── Live diagnostics (squiggly underlines) ───────────────
+      let validateTimer = null;
+      function runValidation() {
+        if (!window.nix_validate || !inputEditor) return;
+        try {
+          const model = inputEditor.getModel();
+          const result = JSON.parse(nix_validate(model.getValue()));
+          const sevMap = {
+            error: monaco.MarkerSeverity.Error,
+            warning: monaco.MarkerSeverity.Warning,
+            info: monaco.MarkerSeverity.Info,
+          };
+          const markers = result.diagnostics.map(d => ({
+            startLineNumber: d.line,
+            startColumn: d.col,
+            endLineNumber: d.line,
+            endColumn: d.endCol,
+            message: d.message,
+            severity: sevMap[d.severity] || monaco.MarkerSeverity.Info,
+          }));
+          monaco.editor.setModelMarkers(model, 'nix-lang', markers);
+
+          const errCount = result.diagnostics.filter(d => d.severity === 'error').length;
+          const warnCount = result.diagnostics.filter(d => d.severity === 'warning').length;
+          const statusEl = document.getElementById('status');
+          if (errCount > 0) {
+            statusEl.innerHTML = '<span class="status-error">●</span> ' + errCount + ' error' + (errCount > 1 ? 's' : '');
+          } else if (warnCount > 0) {
+            statusEl.innerHTML = '<span class="status-ready">●</span> ' + warnCount + ' warning' + (warnCount > 1 ? 's' : '');
+          } else {
+            statusEl.innerHTML = '<span class="status-ready">●</span> tvix ready';
+          }
+        } catch (e) { /* ignore validation errors */ }
+      }
+
+      inputEditor.onDidChangeModelContent(() => {
+        clearTimeout(validateTimer);
+        validateTimer = setTimeout(runValidation, 300);
+      });
+
+      // Load demos once WASM is ready
+      waitForWasm(() => {
+        loadDemos();
+        runValidation();
+        document.getElementById('status').innerHTML =
+          '<span class="status-ready">●</span> tvix ready';
+      });
+    });
+
+    // ── Demo loader ──────────────────────────────────────────────
+    function loadDemos() {
+      try {
+        const demos = JSON.parse(nix_demos());
+        const sidebar = document.getElementById('demo-sidebar');
+
+        sidebar.innerHTML = '<div class="demo-sidebar-header"><span>Demos</span><button onclick="toggleSidebar()" title="Hide demos">✕</button></div>';
+
+        const categories = {};
+        demos.forEach(d => {
+          const cat = d.category || 'Other';
+          if (!categories[cat]) categories[cat] = [];
+          categories[cat].push(d);
+        });
+
+        Object.keys(categories).forEach(cat => {
+          const section = document.createElement('div');
+          section.className = 'demo-category';
+
+          const label = document.createElement('div');
+          label.className = 'demo-category-label';
+          label.innerHTML = '<span class="arrow">▾</span>' + cat;
+          label.onclick = () => section.classList.toggle('collapsed');
+          section.appendChild(label);
+
+          const items = document.createElement('div');
+          items.className = 'demo-items';
+          categories[cat].forEach(d => {
+            const btn = document.createElement('button');
+            btn.className = 'demo-btn';
+            btn.textContent = d.name;
+            btn.title = d.description;
+            btn.onclick = () => {
+              sidebar.querySelectorAll('.demo-btn.active').forEach(b => b.classList.remove('active'));
+              btn.classList.add('active');
+              inputEditor.setValue('# ' + d.description + '\n' + d.code);
+              runEval();
+            };
+            items.appendChild(btn);
+          });
+          section.appendChild(items);
+          sidebar.appendChild(section);
+        });
+      } catch (e) {
+        console.error('Failed to load demos:', e);
+      }
+    }
+
+    function toggleSidebar() {
+      document.getElementById('demo-sidebar').classList.toggle('hidden');
+      setTimeout(() => {
+        inputEditor && inputEditor.layout();
+        outputEditor && outputEditor.layout();
+      }, 10);
+    }
+
+    // ── Eval (Editor mode) ───────────────────────────────────────
+    function runEval() {
+      const input = inputEditor.getValue();
+      if (!input.trim()) {
+        outputEditor.setValue('# No expression to evaluate');
+        return;
+      }
+
+      // Evaluate the entire editor content as a single Nix expression.
+      // Strip leading comment lines for cleaner evaluation, but send
+      // the whole thing if there are non-comment lines mixed in.
+      try {
+        const t0 = performance.now();
+        const result = JSON.parse(nix_eval(input));
+        const elapsed = (performance.now() - t0).toFixed(1);
+
+        if (result.ok) {
+          outputEditor.setValue(result.value + '\n\n# evaluated in ' + elapsed + 'ms');
+          document.getElementById('output-type').textContent = 'value';
+        } else {
+          outputEditor.setValue('# Error\n' + result.error);
+          document.getElementById('output-type').textContent = 'error';
+        }
+      } catch (e) {
+        outputEditor.setValue('# Internal error: ' + (e.message || String(e)));
+        document.getElementById('output-type').textContent = 'error';
+      }
+    }
+
+    // ── REPL ─────────────────────────────────────────────────────
+    function replEval() {
+      const input = document.getElementById('repl-input');
+      const output = document.getElementById('repl-output');
+      const text = input.value.trim();
+      if (!text) return;
+
+      replHistory.unshift(text);
+      replHistoryIdx = -1;
+
+      // Input line
+      const inputLine = document.createElement('div');
+      inputLine.className = 'repl-line input';
+      inputLine.textContent = text;
+      output.appendChild(inputLine);
+
+      try {
+        const result = JSON.parse(nix_eval(text));
+        const resultLine = document.createElement('div');
+
+        if (result.ok) {
+          resultLine.className = 'repl-line result';
+          resultLine.textContent = result.value;
+        } else {
+          resultLine.className = 'repl-line error';
+          resultLine.textContent = result.error;
+        }
+        output.appendChild(resultLine);
+      } catch (e) {
+        const errLine = document.createElement('div');
+        errLine.className = 'repl-line error';
+        errLine.textContent = e.message || String(e);
+        output.appendChild(errLine);
+      }
+
+      input.value = '';
+      output.scrollTop = output.scrollHeight;
+    }
+
+    // REPL history with up/down arrows
+    document.addEventListener('keydown', e => {
+      const input = document.getElementById('repl-input');
+      if (document.activeElement !== input) return;
+      if (e.key === 'ArrowUp' && replHistory.length > 0) {
+        replHistoryIdx = Math.min(replHistoryIdx + 1, replHistory.length - 1);
+        input.value = replHistory[replHistoryIdx];
+        e.preventDefault();
+      } else if (e.key === 'ArrowDown') {
+        replHistoryIdx = Math.max(replHistoryIdx - 1, -1);
+        input.value = replHistoryIdx >= 0 ? replHistory[replHistoryIdx] : '';
+        e.preventDefault();
+      }
+    });
+
+    // ── Tab switching ────────────────────────────────────────────
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.getElementById('tab-' + tab).classList.add('active');
+
+      const editorView = document.getElementById('editor-view');
+      const replView = document.getElementById('repl-view');
+
+      if (tab === 'editor') {
+        editorView.classList.remove('hidden');
+        replView.classList.add('hidden');
+        setTimeout(() => {
+          inputEditor && inputEditor.layout();
+          outputEditor && outputEditor.layout();
+        }, 10);
+      } else {
+        editorView.classList.add('hidden');
+        replView.classList.remove('hidden');
+        document.getElementById('repl-input').focus();
+      }
+    }
+  </script>
+</body>
+</html>

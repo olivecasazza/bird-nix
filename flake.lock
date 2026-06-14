@@ -49,11 +49,28 @@
         "type": "github"
       }
     },
+    "panel-kit": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1781395189,
+        "narHash": "sha256-nddiqlJ5k8mdqQaG6DtESV7tQ29q5WSHPPtFapvlJtU=",
+        "owner": "olivecasazza",
+        "repo": "panel-kit",
+        "rev": "a29eb7fa333ffbc6acafb3945a51279259c057b4",
+        "type": "github"
+      },
+      "original": {
+        "owner": "olivecasazza",
+        "repo": "panel-kit",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "crane": "crane",
         "flake-utils": "flake-utils",
         "nixpkgs": "nixpkgs",
+        "panel-kit": "panel-kit",
         "rust-overlay": "rust-overlay"
       }
     },

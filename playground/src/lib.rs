@@ -389,6 +389,446 @@ pub fn nix_demos() -> String {
     .to_string()
 }
 
+// ── Panel Kit UI ──────────────────────────────────────────────────────────
+
+#[cfg(target_arch = "wasm32")]
+mod ui {
+    use super::{eval_with_prelude, nix_demos};
+    use dioxus::events::{Key, KeyboardEvent, MouseEvent};
+    use dioxus::prelude::*;
+    use panel_kit::{
+        is_editing, use_workspace, LayoutBuilder, Mode, PanelKind, PanelWin, WinState, CSS,
+    };
+    use serde::{Deserialize, Serialize};
+
+    const STORAGE_KEY: &str = "bird_nix_panelkit_layout";
+
+    const APP_CSS: &str = r#"
+:root {
+  --bg: #101113;
+  --panel: #151820;
+  --fg: #e5e7eb;
+  --dim: #8b95a3;
+  --line: #303743;
+  --line2: #4d5664;
+  --accent: #5bd6c3;
+  --yellow: #f2c14e;
+  --green: #3ecf8e;
+  --blue: #6aa8ff;
+  --pink: #f06aaf;
+  --mono: 'Inconsolata', ui-monospace, monospace;
+  font-size: 18px;
+}
+.topbar button {
+  background: var(--bg);
+  border: 1px solid var(--line2);
+  border-radius: 3px;
+  color: var(--fg);
+  cursor: pointer;
+  font-size: .72rem;
+  padding: .15rem .5rem;
+}
+.topbar button:hover { border-color: var(--fg); }
+.topbar .status-ok { color: var(--green); }
+.topbar .status-bad { color: var(--pink); }
+.ws.tiling .panel-editor,
+.ws.tiling .panel-output { --panel-grow: 2; }
+.panel-body { padding: 1.7rem .6rem .6rem; }
+.toolbar { align-items: center; display: flex; gap: .45rem; margin-bottom: .5rem; }
+.toolbar button, .demo-button, .ref-button, .repl-run {
+  background: var(--bg);
+  border: 1px solid var(--line2);
+  border-radius: 3px;
+  color: var(--fg);
+  cursor: pointer;
+  font-size: .72rem;
+  padding: .2rem .5rem;
+}
+.toolbar button:hover, .demo-button:hover, .ref-button:hover, .repl-run:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.code-area, .repl-input {
+  background: var(--bg);
+  border: 1px solid var(--line2);
+  border-radius: 3px;
+  color: var(--fg);
+  font-family: var(--mono);
+  font-size: .86rem;
+  outline: none;
+  padding: .55rem;
+  width: 100%;
+}
+.code-area {
+  height: calc(100% - 2.3rem);
+  min-height: 180px;
+  resize: none;
+}
+.output-pre, .repl-log {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  color: var(--fg);
+  font-size: .8rem;
+  height: 100%;
+  margin: 0;
+  overflow: auto;
+  padding: .55rem;
+  white-space: pre-wrap;
+}
+.demo-group { border-bottom: 1px solid var(--line); padding: .35rem 0 .5rem; }
+.demo-group-title, .section-title {
+  color: var(--yellow);
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  margin: .25rem 0;
+  text-transform: uppercase;
+}
+.demo-button {
+  display: block;
+  margin: .22rem 0;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+.muted { color: var(--dim); }
+.ref-card, .law-card {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  margin-bottom: .5rem;
+  padding: .5rem;
+}
+.ref-button {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: .35rem;
+  width: 100%;
+}
+.ref-rule, .law-name { color: var(--yellow); font-weight: 700; }
+.ref-type, .ref-description, .law-description {
+  color: var(--dim);
+  font-size: .74rem;
+  line-height: 1.35;
+}
+.repl-shell { display: grid; gap: .5rem; grid-template-rows: 1fr auto; height: 100%; }
+.repl-row { display: flex; gap: .4rem; }
+.repl-input { flex: 1; }
+.repl-line { margin-bottom: .3rem; }
+.repl-in { color: var(--accent); }
+.repl-out { color: var(--green); }
+.repl-err { color: var(--pink); }
+"#;
+
+    const DEFAULT_CODE: &str = r#"# bird-nix playground - real Nix evaluation in the browser
+# The bird combinators (I, M, K, KI, B, C, W, S, L, V, Y) are preloaded.
+# Press Ctrl+Enter or Evaluate.
+
+K "yes" "no""#;
+
+    const BIRD_DATA_JSON: &str = include_str!("../bird-data.json");
+
+    #[derive(Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+    enum PlaygroundPanel {
+        Editor,
+        Output,
+        Demos,
+        Reference,
+        Laws,
+        Repl,
+    }
+
+    impl PanelKind for PlaygroundPanel {
+        fn title(self) -> &'static str {
+            match self {
+                PlaygroundPanel::Editor => "Editor",
+                PlaygroundPanel::Output => "Output",
+                PlaygroundPanel::Demos => "Demos",
+                PlaygroundPanel::Reference => "Reference",
+                PlaygroundPanel::Laws => "Laws",
+                PlaygroundPanel::Repl => "REPL",
+            }
+        }
+    }
+
+    #[derive(Clone, Deserialize)]
+    struct Demo {
+        category: String,
+        name: String,
+        description: String,
+        code: String,
+    }
+
+    #[derive(Clone, Deserialize)]
+    struct BirdInfo {
+        aka: String,
+        description: String,
+        name: String,
+        rule: String,
+        speech: String,
+        #[serde(rename = "type")]
+        ty: String,
+    }
+
+    #[derive(Clone, Deserialize)]
+    struct Law {
+        description: String,
+        name: String,
+    }
+
+    #[derive(Clone, Deserialize)]
+    struct BirdData {
+        #[serde(rename = "birdList")]
+        bird_list: Vec<BirdInfo>,
+        laws: Vec<Law>,
+    }
+
+    #[derive(Clone)]
+    struct ReplEntry {
+        input: String,
+        output: String,
+        ok: bool,
+    }
+
+    fn default_layout() -> Vec<PanelWin<PlaygroundPanel>> {
+        let mut b = LayoutBuilder::new();
+        let mut laws = b.at(PlaygroundPanel::Laws, 900.0, 350.0, 320.0, 250.0);
+        laws.state = WinState::Minimized;
+        vec![
+            b.at(PlaygroundPanel::Editor, 300.0, 16.0, 560.0, 430.0),
+            b.at(PlaygroundPanel::Output, 300.0, 462.0, 560.0, 250.0),
+            b.at(PlaygroundPanel::Demos, 16.0, 16.0, 260.0, 696.0),
+            b.at(PlaygroundPanel::Reference, 884.0, 16.0, 330.0, 320.0),
+            laws,
+            b.at(PlaygroundPanel::Repl, 884.0, 350.0, 330.0, 250.0),
+        ]
+    }
+
+    fn run_eval(code: &str) -> (String, bool) {
+        match eval_with_prelude(code) {
+            Ok(value) => (value, true),
+            Err(err) => (err, false),
+        }
+    }
+
+    fn grouped_demos(demos: &[Demo]) -> Vec<(String, Vec<Demo>)> {
+        let mut groups: Vec<(String, Vec<Demo>)> = Vec::new();
+        for demo in demos {
+            if let Some((_, items)) = groups.iter_mut().find(|(cat, _)| cat == &demo.category) {
+                items.push(demo.clone());
+            } else {
+                groups.push((demo.category.clone(), vec![demo.clone()]));
+            }
+        }
+        groups
+    }
+
+    #[wasm_bindgen::prelude::wasm_bindgen(start)]
+    pub fn start() {
+        dioxus::launch(App);
+    }
+
+    #[component]
+    fn App() -> Element {
+        let ws = use_workspace(STORAGE_KEY, default_layout);
+        let mut code = use_signal(|| DEFAULT_CODE.to_string());
+        let mut output = use_signal(|| "# Output will appear here".to_string());
+        let mut status = use_signal(|| "tvix ready".to_string());
+        let mut last_ok = use_signal(|| true);
+        let mut repl_input = use_signal(String::new);
+        let mut repl_log = use_signal(Vec::<ReplEntry>::new);
+        let demos =
+            use_signal(|| serde_json::from_str::<Vec<Demo>>(&nix_demos()).unwrap_or_default());
+        let bird_data = use_signal(|| {
+            serde_json::from_str::<BirdData>(BIRD_DATA_JSON).unwrap_or(BirdData {
+                bird_list: Vec::new(),
+                laws: Vec::new(),
+            })
+        });
+
+        let mut evaluate = move || {
+            let current = code.read().clone();
+            let (value, ok) = run_eval(&current);
+            output.set(value);
+            last_ok.set(ok);
+            status.set(if ok { "evaluated" } else { "evaluation failed" }.to_string());
+        };
+
+        let mut submit_repl = move || {
+            let text = repl_input.read().trim().to_string();
+            if text.is_empty() {
+                return;
+            }
+            let (value, ok) = run_eval(&text);
+            repl_log.write().push(ReplEntry {
+                input: text,
+                output: value,
+                ok,
+            });
+            repl_input.set(String::new());
+        };
+
+        let mode_label = match ws.effective_mode() {
+            Mode::Floating => "floating",
+            Mode::Tiling => "tiling",
+        };
+
+        let body = move |kind: PlaygroundPanel, _maximized: bool| -> Element {
+            match kind {
+                PlaygroundPanel::Editor => rsx! {
+                    div { class: "toolbar",
+                        button { onclick: move |_| evaluate(), "Evaluate" }
+                        span { class: "muted", "Ctrl+Enter works here; panel chrome comes from panel-kit." }
+                    }
+                    textarea {
+                        class: "code-area",
+                        value: "{code.read()}",
+                        spellcheck: "false",
+                        oninput: move |e| code.set(e.value()),
+                        onkeydown: move |e: KeyboardEvent| {
+                            if e.modifiers().ctrl() && e.key() == Key::Enter {
+                                evaluate();
+                            }
+                        },
+                    }
+                },
+                PlaygroundPanel::Output => rsx! {
+                    pre { class: "output-pre", "{output.read()}" }
+                },
+                PlaygroundPanel::Demos => {
+                    let groups = grouped_demos(&demos.read());
+                    rsx! {
+                        for (category, items) in groups {
+                            div { class: "demo-group",
+                                div { class: "demo-group-title", "{category}" }
+                                for demo in items {
+                                    button {
+                                        class: "demo-button",
+                                        title: "{demo.description}",
+                                        onclick: move |_| {
+                                            let current = format!("# {}\n{}", demo.description, demo.code);
+                                            code.set(current.clone());
+                                            let (value, ok) = run_eval(&current);
+                                            output.set(value);
+                                            last_ok.set(ok);
+                                            status.set(if ok { "demo evaluated" } else { "demo failed" }.to_string());
+                                        },
+                                        "{demo.name}"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                PlaygroundPanel::Reference => {
+                    let birds = bird_data.read().bird_list.clone();
+                    rsx! {
+                        div { class: "section-title", "Birds" }
+                        for bird in birds {
+                            div { class: "ref-card",
+                                button {
+                                    class: "ref-button",
+                                    onclick: move |_| code.set(bird.name.clone()),
+                                    span { "{bird.aka}" }
+                                    span { "{bird.name}" }
+                                }
+                                div { class: "ref-rule", "{bird.rule}" }
+                                div { class: "ref-type", "{bird.ty}" }
+                                div { class: "ref-description", "{bird.description}" }
+                                div { class: "ref-description", "{bird.speech}" }
+                            }
+                        }
+                    }
+                }
+                PlaygroundPanel::Laws => {
+                    let laws = bird_data.read().laws.clone();
+                    rsx! {
+                        div { class: "section-title", "Algebraic laws" }
+                        for law in laws {
+                            div { class: "law-card",
+                                div { class: "law-name", "{law.name}" }
+                                div { class: "law-description", "{law.description}" }
+                            }
+                        }
+                    }
+                }
+                PlaygroundPanel::Repl => rsx! {
+                    div { class: "repl-shell",
+                        div { class: "repl-log",
+                            if repl_log.read().is_empty() {
+                                div { class: "muted", "The bird-nix prelude is loaded. Try: S K K \"hello\"" }
+                            }
+                            for entry in repl_log.read().iter() {
+                                div { class: "repl-line repl-in", "nix> {entry.input}" }
+                                div { class: if entry.ok { "repl-line repl-out" } else { "repl-line repl-err" }, "{entry.output}" }
+                            }
+                        }
+                        div { class: "repl-row",
+                            input {
+                                class: "repl-input",
+                                value: "{repl_input.read()}",
+                                placeholder: "K \"yes\" \"no\"",
+                                oninput: move |e| repl_input.set(e.value()),
+                                onkeydown: move |e: KeyboardEvent| {
+                                    if e.key() == Key::Enter {
+                                        submit_repl();
+                                    }
+                                },
+                            }
+                            button { class: "repl-run", onclick: move |_| submit_repl(), "Run" }
+                        }
+                    }
+                },
+            }
+        };
+
+        rsx! {
+            style { {CSS} }
+            style { {APP_CSS} }
+            div {
+                class: ws.root_class(),
+                tabindex: "0",
+                onmousemove: move |e: MouseEvent| ws.handle_mouse_move(&e),
+                onmouseup: move |_| ws.handle_mouse_up(),
+                onkeydown: move |e: KeyboardEvent| {
+                    if is_editing() {
+                        return;
+                    }
+                    if let Key::Character(c) = e.key() {
+                        if c == "t" {
+                            let mut mode = ws.mode;
+                            let next = if *mode.read() == Mode::Tiling {
+                                Mode::Floating
+                            } else {
+                                Mode::Tiling
+                            };
+                            mode.set(next);
+                        }
+                    }
+                },
+                header { class: "topbar",
+                    h1 { "bird-nix playground" }
+                    span { class: "hint", "panel-kit default layout · {mode_label} · drag, resize, minimize, dock" }
+                    button { onclick: move |_| evaluate(), "evaluate" }
+                    button {
+                        onclick: move |_| {
+                            let mut mode = ws.mode;
+                            let next = if *mode.read() == Mode::Tiling { Mode::Floating } else { Mode::Tiling };
+                            mode.set(next);
+                        },
+                        "toggle mode"
+                    }
+                    span { class: if *last_ok.read() { "activity status-ok" } else { "activity status-bad" }, "{status.read()}" }
+                }
+                {ws.render(body)}
+                {ws.dock()}
+            }
+        }
+    }
+}
+
 // ── Tests ──────────────────────────────────────────────────────────────────
 
 #[cfg(test)]

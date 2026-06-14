@@ -5,6 +5,10 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     crane.url = "github:ipetkov/crane";
     flake-utils.url = "github:numtide/flake-utils";
+    panel-kit = {
+      url = "github:olivecasazza/panel-kit";
+      flake = false;
+    };
     rust-overlay = {
       url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -17,6 +21,7 @@
       nixpkgs,
       crane,
       flake-utils,
+      panel-kit,
       rust-overlay,
       ...
     }:
@@ -96,6 +101,13 @@
             cargoToml = "${src}/playground/Cargo.toml";
             cargoLock = "${src}/playground/Cargo.lock";
             sourceRoot = "source/playground";
+            # Cargo.toml uses `../../panel-kit` for local development from
+            # bird-nix/playground. Recreate that sibling checkout in crane's
+            # build dir so the same path works in the Nix sandbox.
+            prePatch = ''
+              cp -rL ${panel-kit.outPath} ../../panel-kit
+              chmod -R u+w ../../panel-kit
+            '';
           };
 
           cargoArtifacts = craneLib.buildDepsOnly (commonArgs // { doCheck = false; });

@@ -404,18 +404,13 @@ mod ui {
     const STORAGE_KEY: &str = "bird_nix_panelkit_layout";
 
     const APP_CSS: &str = r#"
+/* bird-nix UI overlay.
+   Do NOT override the panel-kit :root palette here — this playground is
+   embedded via iframe inside the info.casazza.io workspace, which uses the
+   same panel-kit chrome. Recoloring on :root breaks visual consistency with
+   the outer panel. Only override what is genuinely bird-nix-specific:
+   the mono font (Inconsolata, loaded in index.html) and the UI density. */
 :root {
-  --bg: #101113;
-  --panel: #151820;
-  --fg: #e5e7eb;
-  --dim: #8b95a3;
-  --line: #303743;
-  --line2: #4d5664;
-  --accent: #5bd6c3;
-  --yellow: #f2c14e;
-  --green: #3ecf8e;
-  --blue: #6aa8ff;
-  --pink: #f06aaf;
   --mono: 'Inconsolata', ui-monospace, monospace;
   font-size: 18px;
 }

@@ -43,9 +43,8 @@
         tests = import ./tests { };
 
         # Individual test suites — pure Nix evaluations, accessed via
-        # `nix eval .#testSuites.birds.summary --impure --raw`, etc.
-        # Not under `checks.<system>.*` because these are attrsets, not
-        # derivations, and `nix flake check` requires derivations.
+        # `nix eval .#testSuites.birds.summary --impure --raw`, etc. The full
+        # suite is gated as a derivation in `checks.x86_64-linux.nix-eval-tests`.
         testSuites = {
           birds = import ./tests/test-birds.nix { };
           compiler = import ./tests/test-compiler.nix { };
@@ -141,6 +140,26 @@
             default = playground;
             playground = playground;
             pages = pages;
+          };
+
+          # PR gate, built by buildbot-nix (repo topic `nixlab-ci`), which
+          # reports GitHub statuses. x86_64-linux only: buildbot's workers are
+          # x86_64-linux, and GitHub Actions runs no Nix.
+          checks = pkgs.lib.optionalAttrs (system == "x86_64-linux") {
+            inherit pages;
+            # The pure-Nix suite is evaluated here; the derivation fails with
+            # the summary when any test fails.
+            nix-eval-tests =
+              pkgs.runCommand "bird-nix-eval-tests"
+                {
+                  summary = libOutputs.tests.summary;
+                  passed = if libOutputs.tests.ok then "1" else "0";
+                }
+                ''
+                  printf '%s\n' "$summary"
+                  [ "$passed" = 1 ] || exit 1
+                  printf '%s\n' "$summary" > $out
+                '';
           };
 
           devShells.default = craneLib.devShell {

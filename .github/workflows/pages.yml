@@ -1,5 +1,8 @@
 name: Pages
 
+# FOLLOW-UP: publish Hydra's `hydraJobs`/`packages.pages` output instead of a
+# Nix build here (CI policy: GitHub Actions runs no Nix).
+
 on:
   push:
     branches: [main]

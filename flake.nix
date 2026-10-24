@@ -144,10 +144,10 @@
           };
 
           # The PR gate: buildbot-nix evaluates `checks` and builds every
-          # attribute, so the two artifacts we ship are what a pull request
-          # has to produce. Without this attribute the flake provides no
-          # `checks` at all and the gate fails before it starts.
-          checks = {
+          # attribute. Its workers are x86_64-linux, so only that system
+          # advertises checks — a darwin attr would be dispatched to a linux
+          # worker and fail on platform mismatch, not on its content.
+          checks = nixpkgs.lib.optionalAttrs (system == "x86_64-linux") {
             inherit playground pages;
           };
 

@@ -43,9 +43,8 @@
         tests = import ./tests { };
 
         # Individual test suites — pure Nix evaluations, accessed via
-        # `nix eval .#testSuites.birds.summary --impure --raw`, etc.
-        # Not under `checks.<system>.*` because these are attrsets, not
-        # derivations, and `nix flake check` requires derivations.
+        # `nix eval .#testSuites.birds.summary --impure --raw`, etc. The full
+        # suite is gated as a derivation in `checks.x86_64-linux.nix-eval-tests`.
         testSuites = {
           birds = import ./tests/test-birds.nix { };
           compiler = import ./tests/test-compiler.nix { };

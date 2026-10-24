@@ -9,94 +9,10 @@ permissions:
   contents: read
   checks: write
 
+# Nix evaluation tests and the pages build are flake `checks`, built by
+# buildbot-nix on PRs; GitHub Actions runs no Nix. The playground tests below
+# are plain cargo.
 jobs:
-  nix-tests:
-    name: Nix Eval Tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: DeterminateSystems/nix-installer-action@main
-      - uses: DeterminateSystems/magic-nix-cache-action@main
-
-      - name: Run Nix tests
-        id: nix-test
-        run: |
-          # Run tests and capture JSON + summary
-          nix eval .#tests.json --impure --raw > nix-results.json
-          nix eval .#tests.summary --impure --raw > nix-summary.txt
-
-          # Parse pass/fail for step outcome
-          ok=$(python3 -c "import json; print(json.load(open('nix-results.json'))['ok'])")
-          total=$(python3 -c "import json; print(json.load(open('nix-results.json'))['total'])")
-          passed=$(python3 -c "import json; print(json.load(open('nix-results.json'))['passed'])")
-          failed=$(python3 -c "import json; print(json.load(open('nix-results.json'))['failed'])")
-
-          echo "ok=$ok" >> "$GITHUB_OUTPUT"
-          echo "total=$total" >> "$GITHUB_OUTPUT"
-          echo "passed=$passed" >> "$GITHUB_OUTPUT"
-          echo "failed=$failed" >> "$GITHUB_OUTPUT"
-
-      - name: Generate JUnit XML
-        if: always()
-        run: |
-          python3 .github/scripts/nix-json-to-junit.py < nix-results.json > nix-results.xml
-
-      - name: Write summary
-        if: always()
-        run: |
-          ok="${{ steps.nix-test.outputs.ok }}"
-          total="${{ steps.nix-test.outputs.total }}"
-          passed="${{ steps.nix-test.outputs.passed }}"
-          failed="${{ steps.nix-test.outputs.failed }}"
-
-          if [ "$ok" = "True" ]; then
-            badge="✅"
-          else
-            badge="❌"
-          fi
-
-          {
-            echo "## ${badge} Nix Eval Tests"
-            echo ""
-            echo "| Metric | Count |"
-            echo "|--------|------:|"
-            echo "| Total  | ${total} |"
-            echo "| Passed | ${passed} |"
-            echo "| Failed | ${failed} |"
-            echo ""
-            echo "<details><summary>Full output</summary>"
-            echo ""
-            echo '```'
-            cat nix-summary.txt
-            echo '```'
-            echo ""
-            echo "</details>"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: nix-test-results
-          path: |
-            nix-results.json
-            nix-results.xml
-
-      - name: Publish test report
-        if: always()
-        uses: mikepenz/action-junit-report@v5
-        with:
-          report_paths: nix-results.xml
-          check_name: Nix Eval Tests
-          include_passed: true
-
-      - name: Fail if tests failed
-        if: steps.nix-test.outputs.ok != 'True'
-        run: |
-          echo "::error::Nix tests failed: ${{ steps.nix-test.outputs.failed }} failures"
-          exit 1
-
   playground-tests:
     name: Playground (tvix) Tests
     runs-on: ubuntu-latest

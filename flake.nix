@@ -6,7 +6,7 @@
     crane.url = "github:ipetkov/crane";
     flake-utils.url = "github:numtide/flake-utils";
     panel-kit = {
-      url = "github:olivecasazza/panel-kit";
+      url = "github:ocasazza/panel-kit";
       flake = false;
     };
     rust-overlay = {

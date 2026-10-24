@@ -143,6 +143,14 @@
             pages = pages;
           };
 
+          # The PR gate: buildbot-nix evaluates `checks` and builds every
+          # attribute, so the two artifacts we ship are what a pull request
+          # has to produce. Without this attribute the flake provides no
+          # `checks` at all and the gate fails before it starts.
+          checks = {
+            inherit playground pages;
+          };
+
           devShells.default = craneLib.devShell {
             packages = with pkgs; [
               trunk

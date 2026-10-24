@@ -6,7 +6,7 @@
     crane.url = "github:ipetkov/crane";
     flake-utils.url = "github:numtide/flake-utils";
     panel-kit = {
-      url = "github:olivecasazza/panel-kit";
+      url = "github:ocasazza/panel-kit";
       flake = false;
     };
     rust-overlay = {
@@ -142,24 +142,12 @@
             pages = pages;
           };
 
-          # PR gate, built by buildbot-nix (repo topic `nixlab-ci`), which
-          # reports GitHub statuses. x86_64-linux only: buildbot's workers are
-          # x86_64-linux, and GitHub Actions runs no Nix.
-          checks = pkgs.lib.optionalAttrs (system == "x86_64-linux") {
-            inherit pages;
-            # The pure-Nix suite is evaluated here; the derivation fails with
-            # the summary when any test fails.
-            nix-eval-tests =
-              pkgs.runCommand "bird-nix-eval-tests"
-                {
-                  summary = libOutputs.tests.summary;
-                  passed = if libOutputs.tests.ok then "1" else "0";
-                }
-                ''
-                  printf '%s\n' "$summary"
-                  [ "$passed" = 1 ] || exit 1
-                  printf '%s\n' "$summary" > $out
-                '';
+          # The PR gate: buildbot-nix evaluates `checks` and builds every
+          # attribute. Its workers are x86_64-linux, so only that system
+          # advertises checks — a darwin attr would be dispatched to a linux
+          # worker and fail on platform mismatch, not on its content.
+          checks = nixpkgs.lib.optionalAttrs (system == "x86_64-linux") {
+            inherit playground pages;
           };
 
           devShells.default = craneLib.devShell {

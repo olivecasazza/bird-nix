@@ -394,11 +394,16 @@ pub fn nix_demos() -> String {
 #[cfg(target_arch = "wasm32")]
 mod ui {
     use super::{eval_with_prelude, nix_demos};
-    use dioxus::events::{Key, KeyboardEvent, MouseEvent};
+    use dioxus::events::{Key, KeyboardEvent, PointerEvent as DioxusPointerEvent};
     use dioxus::prelude::*;
-    use panel_kit::{
-        is_editing, use_workspace, LayoutBuilder, Mode, PanelKind, PanelWin, WinState, CSS,
+    use panel_kit::widgets::{dock, root};
+    use panel_kit::workspace::{
+        handle_key, handle_pointer_move, handle_pointer_up, handle_wheel, mount_viewport_observer,
+        panel_element, project_workspace, use_panel_workspace, workspace_area_class,
+        workspace_event_handler, WorkspaceOptions,
     };
+    use panel_kit::{LayoutBuilder, PanelKind, PanelWin, WinState, CSS};
+    use panel_kit_core::PanelCatalog;
     use serde::{Deserialize, Serialize};
 
     const STORAGE_KEY: &str = "bird_nix_panelkit_layout";
@@ -415,39 +420,39 @@ mod ui {
   font-size: 18px;
 }
 .topbar button {
-  background: var(--bg);
-  border: 1px solid var(--line2);
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
   border-radius: 3px;
-  color: var(--fg);
+  color: var(--color-text);
   cursor: pointer;
   font-size: .72rem;
   padding: .15rem .5rem;
 }
-.topbar button:hover { border-color: var(--fg); }
-.topbar .status-ok { color: var(--green); }
-.topbar .status-bad { color: var(--pink); }
+.topbar button:hover { border-color: var(--color-text); }
+.topbar .status-ok { color: var(--color-success); }
+.topbar .status-bad { color: var(--color-error); }
 .ws.tiling .panel-editor,
 .ws.tiling .panel-output { --panel-grow: 2; }
 .panel-body { padding: 1.7rem .6rem .6rem; }
 .toolbar { align-items: center; display: flex; gap: .45rem; margin-bottom: .5rem; }
 .toolbar button, .demo-button, .ref-button, .repl-run {
-  background: var(--bg);
-  border: 1px solid var(--line2);
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
   border-radius: 3px;
-  color: var(--fg);
+  color: var(--color-text);
   cursor: pointer;
   font-size: .72rem;
   padding: .2rem .5rem;
 }
 .toolbar button:hover, .demo-button:hover, .ref-button:hover, .repl-run:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--color-highlight);
+  color: var(--color-highlight);
 }
 .code-area, .repl-input {
-  background: var(--bg);
-  border: 1px solid var(--line2);
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
   border-radius: 3px;
-  color: var(--fg);
+  color: var(--color-text);
   font-family: var(--mono);
   font-size: .86rem;
   outline: none;
@@ -460,10 +465,10 @@ mod ui {
   resize: none;
 }
 .output-pre, .repl-log {
-  background: var(--bg);
-  border: 1px solid var(--line);
+  background: var(--color-background);
+  border: 1px solid var(--color-divider);
   border-radius: 3px;
-  color: var(--fg);
+  color: var(--color-text);
   font-size: .8rem;
   height: 100%;
   margin: 0;
@@ -471,9 +476,9 @@ mod ui {
   padding: .55rem;
   white-space: pre-wrap;
 }
-.demo-group { border-bottom: 1px solid var(--line); padding: .35rem 0 .5rem; }
+.demo-group { border-bottom: 1px solid var(--color-divider); padding: .35rem 0 .5rem; }
 .demo-group-title, .section-title {
-  color: var(--yellow);
+  color: var(--color-warning);
   font-size: .72rem;
   font-weight: 700;
   letter-spacing: .04em;
@@ -488,10 +493,10 @@ mod ui {
   text-overflow: ellipsis;
   width: 100%;
 }
-.muted { color: var(--dim); }
+.muted { color: var(--color-text-muted); }
 .ref-card, .law-card {
-  background: var(--bg);
-  border: 1px solid var(--line);
+  background: var(--color-background);
+  border: 1px solid var(--color-divider);
   border-radius: 3px;
   margin-bottom: .5rem;
   padding: .5rem;
@@ -502,9 +507,9 @@ mod ui {
   margin-bottom: .35rem;
   width: 100%;
 }
-.ref-rule, .law-name { color: var(--yellow); font-weight: 700; }
+.ref-rule, .law-name { color: var(--color-warning); font-weight: 700; }
 .ref-type, .ref-description, .law-description {
-  color: var(--dim);
+  color: var(--color-text-muted);
   font-size: .74rem;
   line-height: 1.35;
 }
@@ -512,9 +517,9 @@ mod ui {
 .repl-row { display: flex; gap: .4rem; }
 .repl-input { flex: 1; }
 .repl-line { margin-bottom: .3rem; }
-.repl-in { color: var(--accent); }
-.repl-out { color: var(--green); }
-.repl-err { color: var(--pink); }
+.repl-in { color: var(--color-highlight); }
+.repl-out { color: var(--color-success); }
+.repl-err { color: var(--color-error); }
 "#;
 
     const DEFAULT_CODE: &str = r#"# bird-nix playground - real Nix evaluation in the browser
@@ -625,9 +630,22 @@ K "yes" "no""#;
         dioxus::launch(App);
     }
 
+    fn catalog() -> std::rc::Rc<PanelCatalog<PlaygroundPanel>> {
+        std::rc::Rc::new(
+            PanelCatalog::from_panel_kind_layout(&default_layout())
+                .expect("the playground's panels have stable ids"),
+        )
+    }
+
     #[component]
     fn App() -> Element {
-        let ws = use_workspace(STORAGE_KEY, default_layout);
+        let workspace = use_panel_workspace(
+            STORAGE_KEY,
+            default_layout,
+            catalog,
+            WorkspaceOptions::tiling(),
+        );
+        mount_viewport_observer(&workspace);
         let mut code = use_signal(|| DEFAULT_CODE.to_string());
         let mut output = use_signal(|| "# Output will appear here".to_string());
         let mut status = use_signal(|| "tvix ready".to_string());
@@ -663,11 +681,6 @@ K "yes" "no""#;
                 ok,
             });
             repl_input.set(String::new());
-        };
-
-        let mode_label = match ws.effective_mode() {
-            Mode::Floating => "floating",
-            Mode::Tiling => "tiling",
         };
 
         let body = move |kind: PlaygroundPanel, _maximized: bool| -> Element {
@@ -779,46 +792,55 @@ K "yes" "no""#;
             }
         };
 
+        let emit = workspace_event_handler(&workspace);
+        let snapshot = workspace.snapshot.read();
+        let mut scratch = workspace.scratch.borrow_mut();
+        let frame = project_workspace(&workspace, &snapshot, &mut scratch);
+        let root_class = root::root_class(&frame);
+        let workspace_class = workspace_area_class(&frame);
+        let style = frame
+            .tile_grid
+            .map(root::tile_grid_style)
+            .unwrap_or_default();
+        let mode_label = match frame.mode {
+            panel_kit_core::Mode::Floating => "floating",
+            panel_kit_core::Mode::Tiling => "tiling",
+        };
+
+        let pointer_move = workspace.clone();
+        let pointer_up = workspace.clone();
+        let wheel = workspace.clone();
+        let keys = workspace.clone();
+        let mode_emit = emit;
+
         rsx! {
             style { {CSS} }
             style { {APP_CSS} }
             div {
-                class: ws.root_class(),
+                class: "{root_class}",
                 tabindex: "0",
-                onmousemove: move |e: MouseEvent| ws.handle_mouse_move(&e),
-                onmouseup: move |_| ws.handle_mouse_up(),
-                onkeydown: move |e: KeyboardEvent| {
-                    if is_editing() {
-                        return;
-                    }
-                    if let Key::Character(c) = e.key() {
-                        if c == "t" {
-                            let mut mode = ws.mode;
-                            let next = if *mode.read() == Mode::Tiling {
-                                Mode::Floating
-                            } else {
-                                Mode::Tiling
-                            };
-                            mode.set(next);
-                        }
-                    }
-                },
+                onpointermove: move |e: DioxusPointerEvent| handle_pointer_move(&pointer_move, &e),
+                onpointerup: move |e: DioxusPointerEvent| handle_pointer_up(&pointer_up, &e),
+                onwheel: move |e: WheelEvent| handle_wheel(&wheel, &e),
+                onkeydown: move |e: KeyboardEvent| handle_key(&keys, &e),
                 header { class: "topbar",
                     h1 { "bird-nix playground" }
-                    span { class: "hint", "panel-kit default layout · {mode_label} · drag, resize, minimize, dock" }
+                    span { class: "hint", "panel-kit workspace · {mode_label} · drag, resize, minimize, dock" }
                     button { onclick: move |_| evaluate(), "evaluate" }
-                    button {
-                        onclick: move |_| {
-                            let mut mode = ws.mode;
-                            let next = if *mode.read() == Mode::Tiling { Mode::Floating } else { Mode::Tiling };
-                            mode.set(next);
-                        },
-                        "toggle mode"
-                    }
                     span { class: if *last_ok.read() { "activity status-ok" } else { "activity status-bad" }, "{status.read()}" }
                 }
-                {ws.render(body)}
-                {ws.dock()}
+                div { class: "{workspace_class}", style: "{style}",
+                    for projected in frame.panels.iter().copied() {
+                        {
+                            let Some(meta) = workspace.catalog.get(projected.key) else {
+                                return rsx! {};
+                            };
+                            let body = body(projected.key, projected.state == WinState::Maximized);
+                            rsx! { {panel_element(projected, meta, mode_emit, body, None)} }
+                        }
+                    }
+                }
+                {dock::dock(frame.dock, &workspace.catalog, mode_emit, None)}
             }
         }
     }

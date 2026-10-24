@@ -6,7 +6,7 @@
     crane.url = "github:ipetkov/crane";
     flake-utils.url = "github:numtide/flake-utils";
     panel-kit = {
-      url = "github:olivecasazza/panel-kit";
+      url = "github:ocasazza/panel-kit";
       flake = false;
     };
     rust-overlay = {
@@ -141,6 +141,14 @@
             default = playground;
             playground = playground;
             pages = pages;
+          };
+
+          # The PR gate: buildbot-nix evaluates `checks` and builds every
+          # attribute. Its workers are x86_64-linux, so only that system
+          # advertises checks — a darwin attr would be dispatched to a linux
+          # worker and fail on platform mismatch, not on its content.
+          checks = nixpkgs.lib.optionalAttrs (system == "x86_64-linux") {
+            inherit playground pages;
           };
 
           devShells.default = craneLib.devShell {

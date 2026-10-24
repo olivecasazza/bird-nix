@@ -103,6 +103,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The playground depends on panel-kit as a sibling checkout
+      # (`../../panel-kit` from playground/), which a bare checkout does not
+      # have: cargo metadata fails before a single test runs.
+      - name: Checkout panel-kit
+        uses: actions/checkout@v4
+        with:
+          repository: ocasazza/panel-kit
+          path: .panel-kit
+
+      - name: Link the sibling checkout
+        run: ln -sfn "$GITHUB_WORKSPACE/.panel-kit" "$(dirname "$GITHUB_WORKSPACE")/panel-kit"
+
       - uses: dtolnay/rust-toolchain@stable
 
       - uses: Swatinem/rust-cache@v2

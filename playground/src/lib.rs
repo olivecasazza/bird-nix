@@ -474,6 +474,12 @@ mod ui {
   padding: .55rem;
   width: 100%;
 }
+.output-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
 .editor-shell {
   container-type: inline-size;
   display: flex;
@@ -509,7 +515,7 @@ mod ui {
 }
 .editor-action:hover { border-color: var(--color-highlight); color: var(--color-highlight); }
 .editor-hint { color: var(--color-text-muted); font-size: .72rem; margin-left: auto; }
-.output-pre, .repl-log {
+.repl-log {
   background: var(--color-background);
   border: 1px solid var(--color-divider);
   border-radius: 3px;
@@ -666,6 +672,17 @@ K "yes" "no""#;
         }
     }
 
+    /// What the output panel shows: a printable value is a Nix expression, so
+    /// it is canonicalised before display. `nix_format` returns its input when
+    /// it does not parse, which covers opaque values (`<LAMBDA>`) and errors.
+    fn display_value(value: &str, ok: bool) -> String {
+        if ok {
+            super::nix_format(value)
+        } else {
+            value.to_string()
+        }
+    }
+
     fn grouped_demos(demos: &[Demo]) -> Vec<(String, Vec<Demo>)> {
         let mut groups: Vec<(String, Vec<Demo>)> = Vec::new();
         for demo in demos {
@@ -717,7 +734,7 @@ K "yes" "no""#;
         let mut evaluate = move || {
             let current = code.read().clone();
             let (value, ok) = run_eval(&current);
-            output.set(value);
+            output.set(display_value(&value, ok));
             last_ok.set(ok);
             status.set(if ok { "evaluated" } else { "evaluation failed" }.to_string());
         };
@@ -730,7 +747,7 @@ K "yes" "no""#;
             let (value, ok) = run_eval(&text);
             repl_log.write().push(ReplEntry {
                 input: text,
-                output: value,
+                output: display_value(&value, ok),
                 ok,
             });
             repl_input.set(String::new());
@@ -767,7 +784,17 @@ K "yes" "no""#;
                     }
                 },
                 PlaygroundPanel::Output => rsx! {
-                    pre { class: "output-pre", "{output.read()}" }
+                    div { class: "output-shell",
+                        MonacoEditor {
+                            value: output,
+                            language: if *last_ok.read() { "nix" } else { "plaintext" },
+                            read_only: true,
+                        }
+                        div { class: "editor-bar",
+                            span { class: "editor-lang", if *last_ok.read() { "Nix value" } else { "error" } }
+                            span { class: "editor-hint", "read-only" }
+                        }
+                    }
                 },
                 PlaygroundPanel::Demos => {
                     let groups = grouped_demos(&demos.read());
@@ -783,7 +810,7 @@ K "yes" "no""#;
                                             let current = format!("# {}\n{}", demo.description, demo.code);
                                             code.set(current.clone());
                                             let (value, ok) = run_eval(&current);
-                                            output.set(value);
+                                            output.set(display_value(&value, ok));
                                             last_ok.set(ok);
                                             status.set(if ok { "demo evaluated" } else { "demo failed" }.to_string());
                                         },

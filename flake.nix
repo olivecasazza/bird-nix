@@ -118,6 +118,13 @@
               // {
                 inherit cargoArtifacts;
                 wasm-bindgen-cli = pkgs.wasm-bindgen-cli_0_2_114;
+                # The editor loads Monaco from `assets/vendor/` (relative to
+                # the document base); the repository does not vendor it, so
+                # it comes from the panel-kit input at build time.
+                preBuild = ''
+                  mkdir -p assets
+                  cp -r ${panel-kit}/assets/vendor assets/vendor
+                '';
                 # Trunk's [[build.copy]] doesn't land in crane's output; copy
                 # runtime-fetched assets ourselves so they're served alongside.
                 postInstall = ''

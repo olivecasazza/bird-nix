@@ -280,6 +280,22 @@ pub fn nix_eval_raw(code: &str) -> String {
     }
 }
 
+/// Pretty-print Nix source. Returns the input unchanged when it does not
+/// parse — an editor action must not rewrite a document mid-edit — and
+/// otherwise the nixpkgs-fmt canonical form.
+#[wasm_bindgen]
+pub fn nix_format(code: &str) -> String {
+    if !rnix::parse(code).errors().is_empty() {
+        return code.to_string();
+    }
+    let formatted = nixpkgs_fmt::reformat_string(code);
+    if formatted.trim().is_empty() {
+        code.to_string()
+    } else {
+        formatted
+    }
+}
+
 /// Validate Nix code and return diagnostics for Monaco.
 /// Uses tvix's compiler in compile-only mode for real Nix diagnostics.
 #[wasm_bindgen]
@@ -396,6 +412,7 @@ mod ui {
     use super::{eval_with_prelude, nix_demos};
     use dioxus::events::{Key, KeyboardEvent, PointerEvent as DioxusPointerEvent};
     use dioxus::prelude::*;
+    use panel_kit::editor::MonacoEditor;
     use panel_kit::widgets::{dock, root};
     use panel_kit::workspace::{
         handle_key, handle_pointer_move, handle_pointer_up, handle_wheel, mount_viewport_observer,
@@ -431,8 +448,6 @@ mod ui {
 .topbar button:hover { border-color: var(--color-text); }
 .topbar .status-ok { color: var(--color-success); }
 .topbar .status-bad { color: var(--color-error); }
-.ws.tiling .panel-editor,
-.ws.tiling .panel-output { --panel-grow: 2; }
 .panel-body { padding: 1.7rem .6rem .6rem; }
 .toolbar { align-items: center; display: flex; gap: .45rem; margin-bottom: .5rem; }
 .toolbar button, .demo-button, .ref-button, .repl-run {
@@ -459,11 +474,41 @@ mod ui {
   padding: .55rem;
   width: 100%;
 }
-.code-area {
-  height: calc(100% - 2.3rem);
-  min-height: 180px;
-  resize: none;
+.editor-shell {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
 }
+.editor-bar {
+  align-items: center;
+  border-top: 1px solid var(--color-divider);
+  display: flex;
+  flex-wrap: nowrap;
+  gap: .35rem;
+  overflow: hidden;
+  padding-top: .35rem;
+  white-space: nowrap;
+}
+@container (max-width: 320px) {
+  .editor-engine, .editor-hint { display: none; }
+}
+.editor-lang, .editor-engine { font-size: .72rem; }
+.editor-lang { color: var(--color-text); font-weight: 700; }
+.editor-engine { color: var(--color-text-muted); }
+.editor-action {
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: .72rem;
+  margin-left: .25rem;
+  padding: .1rem .45rem;
+}
+.editor-action:hover { border-color: var(--color-highlight); color: var(--color-highlight); }
+.editor-hint { color: var(--color-text-muted); font-size: .72rem; margin-left: auto; }
 .output-pre, .repl-log {
   background: var(--color-background);
   border: 1px solid var(--color-divider);
@@ -597,12 +642,20 @@ K "yes" "no""#;
         let mut laws = b.at(PlaygroundPanel::Laws, 900.0, 350.0, 320.0, 250.0);
         laws.state = WinState::Minimized;
         vec![
-            b.at(PlaygroundPanel::Editor, 300.0, 16.0, 560.0, 430.0),
-            b.at(PlaygroundPanel::Output, 300.0, 462.0, 560.0, 250.0),
-            b.at(PlaygroundPanel::Demos, 16.0, 16.0, 260.0, 696.0),
-            b.at(PlaygroundPanel::Reference, 884.0, 16.0, 330.0, 320.0),
-            laws,
-            b.at(PlaygroundPanel::Repl, 884.0, 350.0, 330.0, 250.0),
+            // Tiling spans, not the floor rectangles, decide the grid: the
+            // code and its result share the top band, the side panels the
+            // bottom one. A compact surface clamps every span to one column.
+            b.at(PlaygroundPanel::Editor, 300.0, 16.0, 560.0, 430.0)
+                .with_tile(2, 3),
+            b.at(PlaygroundPanel::Output, 860.0, 16.0, 560.0, 430.0)
+                .with_tile(2, 3),
+            b.at(PlaygroundPanel::Demos, 16.0, 16.0, 260.0, 696.0)
+                .with_tile(1, 2),
+            b.at(PlaygroundPanel::Reference, 16.0, 720.0, 330.0, 320.0)
+                .with_tile(1, 2),
+            laws.with_tile(1, 2),
+            b.at(PlaygroundPanel::Repl, 360.0, 720.0, 520.0, 250.0)
+                .with_tile(2, 2),
         ]
     }
 
@@ -686,20 +739,31 @@ K "yes" "no""#;
         let body = move |kind: PlaygroundPanel, _maximized: bool| -> Element {
             match kind {
                 PlaygroundPanel::Editor => rsx! {
-                    div { class: "toolbar",
-                        button { onclick: move |_| evaluate(), "Evaluate" }
-                        span { class: "muted", "Ctrl+Enter works here; panel chrome comes from panel-kit." }
-                    }
-                    textarea {
-                        class: "code-area",
-                        value: "{code.read()}",
-                        spellcheck: "false",
-                        oninput: move |e| code.set(e.value()),
-                        onkeydown: move |e: KeyboardEvent| {
-                            if e.modifiers().ctrl() && e.key() == Key::Enter {
-                                evaluate();
+                    div { class: "editor-shell",
+                        MonacoEditor {
+                            value: code,
+                            language: "nix",
+                            on_submit: move |_| evaluate(),
+                        }
+                        div { class: "editor-bar",
+                            span { class: "editor-lang", "Nix" }
+                            span { class: "editor-engine", "tvix-eval" }
+                            button {
+                                class: "editor-action",
+                                onclick: move |_| {
+                                    let formatted = super::nix_format(&code.read());
+                                    code.set(formatted);
+                                    status.set("formatted".to_string());
+                                },
+                                "format"
                             }
-                        },
+                            button {
+                                class: "editor-action",
+                                onclick: move |_| evaluate(),
+                                "evaluate"
+                            }
+                            span { class: "editor-hint", "cmd-enter" }
+                        }
                     }
                 },
                 PlaygroundPanel::Output => rsx! {
@@ -873,6 +937,14 @@ mod tests {
     fn test_eval_string() {
         let result = eval_nix("\"hello\"");
         assert_eq!(result.unwrap(), "\"hello\"");
+    }
+
+    #[test]
+    fn test_format_reindents_and_never_loses_input() {
+        assert_eq!(nix_format("{a=1;}"), "{ a = 1; }\n");
+        // Unparseable source has no canonical form; the editor must keep the
+        // document rather than replace it with an empty string.
+        assert_eq!(nix_format("let in {"), "let in {");
     }
 
     #[test]

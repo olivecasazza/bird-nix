@@ -130,6 +130,57 @@ let
       result = builtins.foldl' addOne { graph = emptyGraph; idx = 0; } edgeSpecs;
     in result.graph;
 
+  # fromSpec : { nodes ? ..., edges ? [ ... ] } -> graph
+  #
+  # Declarative graph literal. Nodes and edges are data rather than an
+  # accumulator threaded through nested calls, so a large graph reads top to
+  # bottom with no closing-parenthesis tail.
+  #
+  #   nodes: attrset of id -> type, or a list of { id, type ? "node", ... }
+  #   edges: list of { from, to, id ? "<from>_<to>", directed ? true, ... }
+  #
+  # Any other attribute on a node or edge entry becomes its metadata, so a
+  # relation kind rides along as data instead of a comment. Endpoints named
+  # only by an edge are added as type "node".
+  fromSpec = spec:
+    let
+      nodeEntries =
+        if builtins.isAttrs (spec.nodes or { }) then
+          builtins.map
+            (id: { inherit id; type = spec.nodes.${id}; })
+            (builtins.attrNames (spec.nodes or { }))
+        else spec.nodes or [ ];
+
+      edgeEntries = spec.edges or [ ];
+
+      nodeOf = entry: {
+        id = entry.id;
+        type = entry.type or "node";
+        metadata = builtins.removeAttrs entry [ "id" "type" ];
+      };
+
+      edgeOf = entry: {
+        id = entry.id or "${entry.from}_${entry.to}";
+        source = entry.from;
+        target = entry.to;
+        directed = entry.directed or true;
+        metadata = builtins.removeAttrs entry [ "from" "to" "id" "directed" ];
+      };
+
+      withNode = graph: entry:
+        graph // { nodes = graph.nodes // { ${entry.id} = nodeOf entry; }; };
+
+      withEdge = graph: entry:
+        let
+          edge = edgeOf entry;
+          ensure = g: id: if g.nodes ? ${id} then g else addNode id "node" g;
+          g1 = ensure (ensure graph edge.source) edge.target;
+        in g1 // { edges = g1.edges // { ${edge.id} = edge; }; };
+    in
+    builtins.foldl' withEdge
+      (builtins.foldl' withNode emptyGraph nodeEntries)
+      edgeEntries;
+
   # toNodeList : graph -> [node]
   toNodeList = graph: builtins.attrValues graph.nodes;
 
@@ -154,5 +205,5 @@ in {
   inherit hasNode hasEdge getNode getEdge;
   inherit neighbors inNeighbors degree edgesFrom edgesTo;
   inherit merge isEmpty isSubgraphOf;
-  inherit fromEdgeList toNodeList toEdgeList toGraphJSON;
+  inherit fromSpec fromEdgeList toNodeList toEdgeList toGraphJSON;
 }

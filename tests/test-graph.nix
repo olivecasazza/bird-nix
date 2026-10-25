@@ -124,6 +124,53 @@ let
     in eq "fromEdgeList edges" (g.edgeCount el) 2)
   ];
 
+  suite-fromSpec = suite "Graph — fromSpec" [
+    (let
+      spec = g.fromSpec {
+        nodes = {
+          a = "kinase";
+          b = "target";
+        };
+        edges = [
+          { from = "a"; to = "b"; rel = "pprel/activation"; }
+        ];
+      };
+    in eq "fromSpec node count" (g.nodeCount spec) 2)
+    (let
+      spec = g.fromSpec {
+        edges = [
+          { from = "a"; to = "b"; }
+          { from = "b"; to = "c"; directed = false; }
+        ];
+      };
+    in eq "fromSpec adds edge endpoints" (g.nodeCount spec) 3)
+    (let
+      spec = g.fromSpec {
+        nodes = {
+          a = "kinase";
+        };
+        edges = [
+          { from = "a"; to = "b"; }
+        ];
+      };
+    in eq "fromSpec keeps declared node type" (g.getNode "a" spec).type "kinase")
+    (let
+      spec = g.fromSpec {
+        edges = [
+          { from = "a"; to = "b"; rel = "pprel/activation"; }
+        ];
+      };
+    in eq "fromSpec carries extra keys as metadata" (g.getEdge "a_b" spec).metadata.rel
+      "pprel/activation")
+    (let
+      spec = g.fromSpec {
+        edges = [
+          { id = "custom"; from = "a"; to = "b"; directed = false; }
+        ];
+      };
+    in eq "fromSpec honours id and direction" (g.getEdge "custom" spec).directed false)
+  ];
+
   # ── Combinator Graph Ops Tests ─────────────────────────────────
 
   suite-identity = suite "GCL — Identity (I)" [
@@ -347,6 +394,7 @@ in
     suite-merge
     suite-subgraph
     suite-conv
+    suite-fromSpec
     suite-identity
     suite-vireo
     suite-compose

@@ -789,6 +789,7 @@ K "yes" "no""#;
                             value: output,
                             language: if *last_ok.read() { "nix" } else { "plaintext" },
                             read_only: true,
+                            word_wrap: true,
                         }
                         div { class: "editor-bar",
                             span { class: "editor-lang", if *last_ok.read() { "Nix value" } else { "error" } }
@@ -964,6 +965,51 @@ mod tests {
     fn test_eval_string() {
         let result = eval_nix("\"hello\"");
         assert_eq!(result.unwrap(), "\"hello\"");
+    }
+
+    /// Every shipped demo has to evaluate in the playground's own context:
+    /// they import `./graph.nix` from the embedded source tree, so a demo
+    /// that references a missing helper fails here rather than in the panel.
+    /// Every shipped demo has to evaluate in the playground's own context:
+    /// they import `./graph.nix` from the embedded source tree, so a demo
+    /// that references a missing helper fails here rather than in the panel.
+    /// Rewrites every demo through `nix_format` when `DEMO_WRITE=1`; a
+    /// maintenance helper, not a check.
+    #[test]
+    fn rewrite_demos_formatted() {
+        if std::env::var("DEMO_WRITE").is_err() {
+            return;
+        }
+        for entry in std::fs::read_dir("demos").expect("demos") {
+            let path = entry.expect("entry").path();
+            if path.extension().and_then(|e| e.to_str()) != Some("nix") {
+                continue;
+            }
+            let source = std::fs::read_to_string(&path).expect("source");
+            std::fs::write(&path, nix_format(&source)).expect("write");
+        }
+    }
+
+    #[test]
+    fn every_demo_evaluates() {
+        let mut checked = 0;
+        for entry in std::fs::read_dir("demos").expect("demos directory") {
+            let path = entry.expect("dir entry").path();
+            if path.extension().and_then(|e| e.to_str()) != Some("nix") {
+                continue;
+            }
+            let source = std::fs::read_to_string(&path).expect("demo source");
+            match eval_with_prelude(&source) {
+                Ok(value) => assert!(
+                    !value.trim().is_empty(),
+                    "{} evaluated to an empty value",
+                    path.display()
+                ),
+                Err(err) => panic!("{} failed to evaluate:\n{err}", path.display()),
+            }
+            checked += 1;
+        }
+        assert!(checked >= 10, "expected the demo set, found {checked}");
     }
 
     #[test]

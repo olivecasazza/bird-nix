@@ -80,6 +80,11 @@ let
     (eq  "degree of b"         (g.degree "b" g3) 0)
     (eq  "edgesFrom a count"   (builtins.length (g.edgesFrom "a" g3)) 1)
     (eq  "edgesTo b count"     (builtins.length (g.edgesTo "b" g3)) 1)
+    (eq  "filterNodes servers" (g.filterNodes (n: (g.getNode n g3).type == "server") g3) ["a"])
+    (eq  "filterNodes clients" (g.filterNodes (n: (g.getNode n g3).type == "client") g3) ["b"])
+    (eq  "filterNodes none"    (g.filterNodes (n: (g.getNode n g3).type == "x") g3) [])
+    (eq  "inDegree of b"       (g.inDegree "b" g3) 1)
+    (eq  "inDegree of a"       (g.inDegree "a" g3) 0)
   ];
 
   suite-merge = suite "Graph — merge" [

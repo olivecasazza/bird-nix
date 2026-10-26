@@ -60,7 +60,8 @@ in {
   inherit graphLib graphCombinators;
   inherit (graphLib) emptyGraph addNode addEdge removeNode removeEdge
     getNodeIds getEdgeIds nodeCount edgeCount hasNode hasEdge getNode getEdge
-    neighbors inNeighbors degree merge isEmpty isSubgraphOf fromSpec fromEdgeList
+    neighbors inNeighbors degree inDegree filterNodes merge isEmpty isSubgraphOf
+    fromSpec fromEdgeList
     toGraphJSON;
   inherit (graphCombinators) identityGraph constGraph edgePair composeOps
     parallelMerge flipOps dupArg makeSelfLoop

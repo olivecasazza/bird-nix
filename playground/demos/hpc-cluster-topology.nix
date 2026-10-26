@@ -18,95 +18,104 @@
 # graph between groups — the hallmark of dragonfly's O(log N) diameter.
 let
   g = import ./graph.nix {};
-  str = builtins.toString;
 
   # Topology parameters (Frontier-inspired, scaled down)
   p = 4;   # compute nodes per switch
   a = 4;   # switches per group
   numGroups = 4;
 
-  # Helper: node/switch naming
-  nodeName = group: sw: port: "n_g${str group}_s${str sw}_p${str port}";
-  swName = group: sw: "sw_g${str group}_s${str sw}";
+  # Naming
+  str = n: if n == 0 then "0" else if n == 1 then "1" else if n == 2 then "2" else if n == 3 then "3" else if n == 4 then "4" else if n == 5 then "5" else if n == 6 then "6" else if n == 7 then "7" else if n == 8 then "8" else "9";
+  nodeName = group: sw: port: "n_g" + str group + "_s" + str sw + "_p" + str port;
+  swName = group: sw: "sw_g" + str group + "_s" + str sw;
 
-  # ── Step 1: Create all compute nodes ─────────────────────────────
-  # Each node has type indicating its group (for community analysis)
-  withNodes = builtins.foldl' (acc: group:
-    builtins.foldl' (acc2: sw:
-      builtins.foldl' (acc3: port:
-        g.addNode (nodeName group sw port) "compute_g${str group}" acc3
-      ) acc2 (builtins.genList (x: x) p)
-    ) acc (builtins.genList (x: x) a)
-  ) g.emptyGraph (builtins.genList (x: x) numGroups);
+  # ── Node generators (let-recursive builders) ─────────────────────
+  # Compute nodes: one per (group, switch, port)
+  computeRow = grp: sw: port:
+    if port >= p then []
+    else [ { id = nodeName grp sw port; type = "compute_g" + str grp; } ]
+      ++ computeRow grp sw (port + 1);
+  computeSwitch = grp: sw:
+    if sw >= a then []
+    else computeRow grp sw 0 ++ computeSwitch grp (sw + 1);
+  computeGroup = grp:
+    if grp >= numGroups then []
+    else computeSwitch grp 0 ++ computeGroup (grp + 1);
+  computeNodes = computeGroup 0;
 
-  # ── Step 2: Create all switches ──────────────────────────────────
-  withSwitches = builtins.foldl' (acc: group:
-    builtins.foldl' (acc2: sw:
-      g.addNode (swName group sw) "switch" acc2
-    ) acc (builtins.genList (x: x) a)
-  ) withNodes (builtins.genList (x: x) numGroups);
+  # Switches: one per (group, switch)
+  switchRow = grp: sw:
+    if sw >= a then []
+    else [ { id = swName grp sw; type = "switch"; } ]
+      ++ switchRow grp (sw + 1);
+  switchGroups = grp:
+    if grp >= numGroups then []
+    else switchRow grp 0 ++ switchGroups (grp + 1);
+  switchNodes = switchGroups 0;
 
-  # ── Step 3: Node-to-switch links (Tier 1) ────────────────────────
-  withNodeLinks = builtins.foldl' (acc: group:
-    builtins.foldl' (acc2: sw:
-      builtins.foldl' (acc3: port:
-        let
-          nid = nodeName group sw port;
-          sid = swName group sw;
-          eid = "link_${nid}_${sid}";
-        in g.addEdge eid nid sid false acc3
-      ) acc2 (builtins.genList (x: x) p)
-    ) acc (builtins.genList (x: x) a)
-  ) withSwitches (builtins.genList (x: x) numGroups);
+  # ── Edge generators ──────────────────────────────────────────────
+  # Tier 1: compute node -> its ToR switch
+  linkRow = grp: sw: port:
+    if port >= p then []
+    else
+      let
+        nid = nodeName grp sw port;
+        sid = swName grp sw;
+      in
+        [ { from = nid; to = sid; id = "link_" + nid + "_" + sid; directed = false; } ]
+        ++ linkRow grp sw (port + 1);
+  linkSwitch = grp: sw:
+    if sw >= a then []
+    else linkRow grp sw 0 ++ linkSwitch grp (sw + 1);
+  linkGroups = grp:
+    if grp >= numGroups then []
+    else linkSwitch grp 0 ++ linkGroups (grp + 1);
+  nodeLinks = linkGroups 0;
 
-  # ── Step 4: Intra-group links (full mesh within each group) ──────
-  # Every switch in a group connects to every other switch in the same group
-  withIntraLinks = builtins.foldl' (acc: group:
-    builtins.foldl' (acc2: sw1:
-      builtins.foldl' (acc3: sw2:
-        if sw1 < sw2 then
-          let
-            eid = "intra_g${str group}_s${str sw1}_s${str sw2}";
-            s1 = swName group sw1;
-            s2 = swName group sw2;
-          in g.addEdge eid s1 s2 false acc3
-        else
-          acc3
-      ) acc2 (builtins.genList (x: x) a)
-    ) acc (builtins.genList (x: x) a)
-  ) withNodeLinks (builtins.genList (x: x) numGroups);
+  # Tier 2: full mesh among switches in each group (sw1 < sw2)
+  intraPair = grp: sw1: sw2:
+    if sw2 >= a then []
+    else
+      (if sw1 < sw2
+         then [ { from = swName grp sw1; to = swName grp sw2; id = "intra_g" + str grp + "_s" + str sw1 + "_s" + str sw2; directed = false; } ]
+         else [])
+      ++ intraPair grp sw1 (sw2 + 1);
+  intraSwitch = grp: sw1:
+    if sw1 >= a then []
+    else intraPair grp sw1 0 ++ intraSwitch grp (sw1 + 1);
+  intraGroup = grp:
+    if grp >= numGroups then []
+    else intraSwitch grp 0 ++ intraGroup (grp + 1);
+  intraLinks = intraGroup 0;
 
-  # ── Step 5: Inter-group (global) links ───────────────────────────
-  # Each group connects to every other group. In a real dragonfly,
-  # global links are distributed across switches. We assign one global
-  # link per (group_i, group_j) pair, cycling through switch indices.
-  dragonfly = builtins.foldl' (acc: g1:
-    builtins.foldl' (acc2: g2:
-      if g1 < g2 then
-        let
-          # Distribute global links across switches (round-robin)
-          sw_idx = builtins.length (builtins.filter (x: x < g2)
-                     (builtins.genList (x: x) numGroups));
-          s1 = swName g1 (g.nodeCount g.emptyGraph + g1 + g2 - g1 - g2 + (g2 - 1));
-          s2 = swName g2 (g1);
-          # Simpler: just use g1 and g2 as switch indices within their groups
-          src = swName g1 g2;
-          dst = swName g2 g1;
-          eid = "global_g${str g1}_g${str g2}";
-        in g.addEdge eid src dst false acc2
-      else
-        acc2
-    ) acc (builtins.genList (x: x) numGroups)
-  ) withIntraLinks (builtins.genList (x: x) numGroups);
+  # Tier 3: one global link per (g1, g2) group pair, g1 < g2
+  globalPair = g1: g2:
+    if g2 >= numGroups then []
+    else
+      (if g1 < g2
+         then [ { from = swName g1 g2; to = swName g2 g1; id = "global_g" + str g1 + "_g" + str g2; directed = false; } ]
+         else [])
+      ++ globalPair g1 (g2 + 1);
+  globalGroup = g1:
+    if g1 >= numGroups then []
+    else globalPair g1 0 ++ globalGroup (g1 + 1);
+  globalLinks = globalGroup 0;
 
   # ── Infrastructure: scheduler + storage ──────────────────────────
-  # These connect to switch 0 of group 0 (head node convention)
-  cluster =
-    g.addNode "scheduler" "slurm_ctld"
-    (g.addNode "lustre_mds" "storage"
-    (g.addEdge "sched_link" "scheduler" "sw_g0_s0" false
-    (g.addEdge "storage_link" "lustre_mds" "sw_g0_s0" false
-    dragonfly)));
+  # Connect to switch 0 of group 0 (head-node convention)
+  infraNodes = [
+    { id = "scheduler"; type = "slurm_ctld"; }
+    { id = "lustre_mds"; type = "storage"; }
+  ];
+  infraLinks = [
+    { from = "scheduler"; to = "sw_g0_s0"; id = "sched_link"; directed = false; }
+    { from = "lustre_mds"; to = "sw_g0_s0"; id = "storage_link"; directed = false; }
+  ];
+
+  cluster = g.fromSpec {
+    nodes = computeNodes ++ switchNodes ++ infraNodes;
+    edges = nodeLinks ++ intraLinks ++ globalLinks ++ infraLinks;
+  };
 in {
   topology = "Dragonfly (Kim 2008, ISCA)";
   reference = "ORNL Frontier, HPE Slingshot interconnect";
@@ -123,8 +132,8 @@ in {
   # Expected link counts:
   # Node-switch: 64, Intra-group: 4*C(4,2)=24, Inter-group: C(4,2)=6
   # Infrastructure: 2. Total = 96
-  node_switch_links = p * a * numGroups;                   # 64
-  intra_group_links = numGroups * (a * (a - 1) / 2);      # 24
+  node_switch_links = p * a * numGroups;                    # 64
+  intra_group_links = numGroups * (a * (a - 1) / 2);       # 24
   inter_group_links = numGroups * (numGroups - 1) / 2;     # 6
 
   # Switch connectivity analysis

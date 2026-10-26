@@ -6,39 +6,42 @@
 # uniform bisection bandwidth and predictable worst-case latency.
 let
   g = import ./graph.nix {};
-  str = builtins.toString;
   rows = 4; cols = 4;
-  nid = r: c: "n${str r}_${str c}";
+  str = n: if n == 0 then "0" else if n == 1 then "1" else if n == 2 then "2" else if n == 3 then "3" else if n == 4 then "4" else if n == 5 then "5" else if n == 6 then "6" else if n == 7 then "7" else if n == 8 then "8" else "9";
+  nid = r: c: "n" + str r + "_" + str c;
   wrap = x: n: if x >= n then 0 else if x < 0 then n - 1 else x;
 
-  # Create router nodes
-  withNodes = builtins.foldl' (acc: r:
-    builtins.foldl' (acc2: c:
-      g.addNode (nid r c) "router" acc2
-    ) acc (builtins.genList (x: x) cols)
-  ) g.emptyGraph (builtins.genList (x: x) rows);
+  # ── Router nodes: n{r}_{c} ────────────────────────────────────────
+  rowNodes = r: c:
+    if c >= cols then [] else [ { id = nid r c; type = "router"; } ]
+      ++ rowNodes r (c + 1);
+  gridNodes = r:
+    if r >= rows then [] else rowNodes r 0 ++ gridNodes (r + 1);
+  nodes = gridNodes 0;
 
-  # Horizontal links (east, with wraparound)
-  withH = builtins.foldl' (acc: r:
-    builtins.foldl' (acc2: c:
-      let
-        src = nid r c;
-        dst = nid r (wrap (c + 1) cols);
-      in g.addEdge "h_${str r}_${str c}" src dst false acc2
-    ) acc (builtins.genList (x: x) cols)
-  ) withNodes (builtins.genList (x: x) rows);
+  # ── Horizontal links (east, with wraparound) ──────────────────────
+  hRow = r: c:
+    if c >= cols then []
+    else
+      [ { from = nid r c; to = nid r (wrap (c + 1) cols); id = "h_" + str r + "_" + str c; directed = false; } ]
+      ++ hRow r (c + 1);
+  hGrid = r:
+    if r >= rows then [] else hRow r 0 ++ hGrid (r + 1);
+  hLinks = hGrid 0;
 
-  # Vertical links (south, with wraparound)
-  torus = builtins.foldl' (acc: r:
-    builtins.foldl' (acc2: c:
-      let
-        src = nid r c;
-        dst = nid (wrap (r + 1) rows) c;
-      in g.addEdge "v_${str r}_${str c}" src dst false acc2
-    ) acc (builtins.genList (x: x) cols)
-  ) withH (builtins.genList (x: x) rows);
+  # ── Vertical links (south, with wraparound) ───────────────────────
+  vRow = r: c:
+    if c >= cols then []
+    else
+      [ { from = nid r c; to = nid (wrap (r + 1) rows) c; id = "v_" + str r + "_" + str c; directed = false; } ]
+      ++ vRow r (c + 1);
+  vGrid = r:
+    if r >= rows then [] else vRow r 0 ++ vGrid (r + 1);
+  vLinks = vGrid 0;
+
+  torus = g.fromSpec { nodes = nodes; edges = hLinks ++ vLinks; };
 in {
-  dimensions = "${str rows}x${str cols} torus";
+  dimensions = str rows + "x" + str cols + " torus";
   total_routers = g.nodeCount torus;
   total_links = g.edgeCount torus;
 

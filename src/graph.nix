@@ -80,6 +80,15 @@ let
   degree = nodeId: graph:
     builtins.length (edgesFrom nodeId graph);
 
+  # inDegree : nodeId -> graph -> int  (in-degree)
+  inDegree = nodeId: graph:
+    builtins.length (edgesTo nodeId graph);
+
+  # filterNodes : (nodeId -> bool) -> graph -> [nodeId]
+  # Node ids whose record satisfies the predicate, in getNodeIds order.
+  filterNodes = pred: graph:
+    builtins.filter pred (getNodeIds graph);
+
   # edgesFrom : nodeId -> graph -> [edge]  (outgoing edge records)
   edgesFrom = nodeId: graph:
     builtins.filter (e: e.source == nodeId)
@@ -203,7 +212,7 @@ in {
   inherit emptyGraph addNode addEdge removeNode removeEdge;
   inherit getNodeIds getEdgeIds nodeCount edgeCount;
   inherit hasNode hasEdge getNode getEdge;
-  inherit neighbors inNeighbors degree edgesFrom edgesTo;
+  inherit neighbors inNeighbors degree inDegree filterNodes edgesFrom edgesTo;
   inherit merge isEmpty isSubgraphOf;
   inherit fromSpec fromEdgeList toNodeList toEdgeList toGraphJSON;
 }

@@ -131,7 +131,7 @@ in
   # Strictly sequential except for C1->C3 skip (partial connectivity)
   c3_inputs = g.inNeighbors "C3_conv" forward; # S2_pool AND C1_act
   input_degree = g.degree "input" forward;
-  loss_indegree = builtins.length (g.inNeighbors "loss" forward);
+  loss_indegree = g.inDegree "loss" forward;
 
   json = g.toGraphJSON forward;
 }

@@ -103,13 +103,13 @@ in
   total_wire_edges = g.edgeCount circuit;
 
   # Gate count by type
-  gate_nodes = builtins.filter
+  gate_nodes = g.filterNodes
     (n:
       let t = (g.getNode n circuit).type;
       in t != "qubit_input" && t != "qubit_output"
         && t != "cbit_input" && t != "cbit_output"
     )
-    (g.getNodeIds circuit);
+    circuit;
 
   # Circuit depth: longest path through DAG = 9 gates per qubit wire
   # (H, CZ, H, X, CZ, X, H, M + wire I/O)

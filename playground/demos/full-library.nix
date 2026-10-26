@@ -1,14 +1,13 @@
-# The whole library through one import: `default.nix` re-exports every module.
-#
-# Nested selects and calls reached through a second import hop are not
-# evaluable in the playground's tvix build, so this demo counts the export
-# surface and makes its runnable call through `birds.nix` directly — the way
-# the playground prelude does.
+# The bird combinators and the graph library through direct single-hop
+# imports. The playground's tvix build cannot follow the multi-hop
+# re-export graph in `default.nix`, so the demos import the leaf modules
+# directly — the same way the playground prelude does.
 let
-  bn = import ./default.nix { };
-  birds = import ./birds.nix { };
-in
-{
-  exports = builtins.length (builtins.attrNames bn);
+  g = import ./graph.nix {};
+  birds = import ./birds.nix {};
+  oneNode = g.addNode "a" "node" g.emptyGraph;
+in {
   kestrelSays = birds.K "yes" "no";
+  skk         = birds.S birds.K birds.K 42;
+  nodeCount   = g.nodeCount oneNode;
 }

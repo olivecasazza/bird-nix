@@ -118,17 +118,17 @@ in
   total_reactions = g.edgeCount pathway;
 
   # Enzyme list with EC numbers
-  enzymes = builtins.filter
+  enzymes = g.filterNodes
     (n:
       (g.getNode n pathway).type == "enzyme"
     )
-    (g.getNodeIds pathway);
+    pathway;
 
-  metabolite_nodes = builtins.filter
+  metabolite_nodes = g.filterNodes
     (n:
       (g.getNode n pathway).type == "metabolite"
     )
-    (g.getNodeIds pathway);
+    pathway;
 
   # PFK1 is the committed/rate-limiting step (most regulated enzyme)
   pfk1_substrates = g.inNeighbors "PFK1" pathway;

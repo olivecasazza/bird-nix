@@ -17,9 +17,10 @@
 # for N=4 search space (2 qubits). Probability of measuring |11> = 1.
 let
   g = import ./graph.nix { };
+  gcl = import ./graph-combinators.nix { graph = g; };
 
   # ── Wire input/output nodes (Qiskit DAGCircuit convention) ───────
-  circuit = g.fromSpec {
+  circuit = gcl.fromSpec {
     nodes = {
       q0_in = "qubit_input"; # qubit 0 starts in |0>
       q1_in = "qubit_input"; # qubit 1 starts in |0>
@@ -99,13 +100,13 @@ in
 
   qubits = 2;
   classical_bits = 2;
-  total_nodes = g.nodeCount circuit;
-  total_wire_edges = g.edgeCount circuit;
+  total_nodes = gcl.nodeCount circuit;
+  total_wire_edges = gcl.edgeCount circuit;
 
   # Gate count by type
-  gate_nodes = g.filterNodes
+  gate_nodes = gcl.filterNodes
     (n:
-      let t = (g.getNode n circuit).type;
+      let t = (gcl.getNode n circuit).type;
       in t != "qubit_input" && t != "qubit_output"
         && t != "cbit_input" && t != "cbit_output"
     )
@@ -113,15 +114,15 @@ in
 
   # Circuit depth: longest path through DAG = 9 gates per qubit wire
   # (H, CZ, H, X, CZ, X, H, M + wire I/O)
-  q0_path = g.neighbors "q0_in" circuit;
+  q0_path = gcl.neighbors "q0_in" circuit;
 
   # CZ gates have in-degree 2 (both qubits feed in)
-  cz_oracle_inputs = g.inNeighbors "CZ_oracle" circuit;
-  cz_diff_inputs = g.inNeighbors "CZ_diff" circuit;
+  cz_oracle_inputs = gcl.inNeighbors "CZ_oracle" circuit;
+  cz_diff_inputs = gcl.inNeighbors "CZ_diff" circuit;
 
   # Measurements connect quantum and classical domains
-  m0_inputs = g.inNeighbors "M0" circuit;
-  m0_outputs = g.neighbors "M0" circuit;
+  m0_inputs = gcl.inNeighbors "M0" circuit;
+  m0_outputs = gcl.neighbors "M0" circuit;
 
-  json = g.toGraphJSON circuit;
+  json = gcl.toGraphJSON circuit;
 }

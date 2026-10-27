@@ -6,6 +6,7 @@
 # uniform bisection bandwidth and predictable worst-case latency.
 let
   g = import ./graph.nix {};
+  gcl = import ./graph-combinators.nix { graph = g; };
   rows = 4; cols = 4;
   str = n: if n == 0 then "0" else if n == 1 then "1" else if n == 2 then "2" else if n == 3 then "3" else if n == 4 then "4" else if n == 5 then "5" else if n == 6 then "6" else if n == 7 then "7" else if n == 8 then "8" else "9";
   nid = r: c: "n" + str r + "_" + str c;
@@ -39,20 +40,20 @@ let
     if r >= rows then [] else vRow r 0 ++ vGrid (r + 1);
   vLinks = vGrid 0;
 
-  torus = g.fromSpec { nodes = nodes; edges = hLinks ++ vLinks; };
+  torus = gcl.fromSpec { nodes = nodes; edges = hLinks ++ vLinks; };
 in {
   dimensions = str rows + "x" + str cols + " torus";
-  total_routers = g.nodeCount torus;
-  total_links = g.edgeCount torus;
+  total_routers = gcl.nodeCount torus;
+  total_links = gcl.edgeCount torus;
 
   # Every node in a torus should have degree 4 (N, S, E, W)
   # Using undirected edges, each link counted once per endpoint
-  n0_0_degree = g.degree "n0_0" torus;
-  n2_3_degree = g.degree "n2_3" torus;
-  center_degree = g.degree "n1_1" torus;
+  n0_0_degree = gcl.degree "n0_0" torus;
+  n2_3_degree = gcl.degree "n2_3" torus;
+  center_degree = gcl.degree "n1_1" torus;
 
   # Wraparound verification: n0_0 connects to n0_3 (west) and n3_0 (north)
-  n0_0_neighbors = g.neighbors "n0_0" torus;
+  n0_0_neighbors = gcl.neighbors "n0_0" torus;
 
-  json = g.toGraphJSON torus;
+  json = gcl.toGraphJSON torus;
 }

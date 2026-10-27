@@ -297,6 +297,13 @@ let
   };
 
 in {
+  # ── Graph library operations (composable facade) ────────────────
+  inherit (graph) emptyGraph addNode addEdge removeNode removeEdge
+    getNodeIds getEdgeIds nodeCount edgeCount
+    hasNode hasEdge getNode getEdge
+    neighbors inNeighbors degree inDegree filterNodes edgesFrom edgesTo
+    merge isEmpty isSubgraphOf
+    fromSpec fromEdgeList toNodeList toEdgeList toGraphJSON;
   inherit pathGen starGen completeGen cycleGen gridGen;
   inherit subdivideRule hubRule reverseEdgesRule contractRule composeOps;
   inherit identityGraph constGraph edgePair dupArg flipOps parallelMerge makeSelfLoop;

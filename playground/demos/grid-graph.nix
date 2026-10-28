@@ -1,10 +1,10 @@
 let
-  gcl = import ./graph-combinators.nix { graph = g; };
   g = import ./graph.nix {};
+  gcl = import ./graph-combinators.nix { graph = g; };
   grid = gcl.gridGen { rows = 3; cols = 3; prefix = "g"; };
 in {
-  nodes = g.getNodeIds grid;
-  edgeCount = g.edgeCount grid;
+  nodes = gcl.getNodeIds grid;
+  edgeCount = gcl.edgeCount grid;
   # Corner node has 2 neighbors (right + down)
-  corner = g.neighbors "g0_0" grid;
+  corner = gcl.neighbors "g0_0" grid;
 }

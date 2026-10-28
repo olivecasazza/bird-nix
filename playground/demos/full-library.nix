@@ -4,10 +4,11 @@
 # directly — the same way the playground prelude does.
 let
   g = import ./graph.nix {};
+  gcl = import ./graph-combinators.nix { graph = g; };
   birds = import ./birds.nix {};
-  oneNode = g.addNode "a" "node" g.emptyGraph;
+  oneNode = gcl.addNode "a" "node" gcl.emptyGraph;
 in {
   kestrelSays = birds.K "yes" "no";
   skk         = birds.S birds.K birds.K 42;
-  nodeCount   = g.nodeCount oneNode;
+  nodeCount   = gcl.nodeCount oneNode;
 }

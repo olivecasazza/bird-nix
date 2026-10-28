@@ -15,9 +15,10 @@
 # Original activation: scaled tanh; modern implementations use ReLU.
 let
   g = import ./graph.nix { };
+  gcl = import ./graph-combinators.nix { graph = g; };
 
   # ── Layer nodes with exact LeCun 1998 specifications ─────────────
-  forward = g.fromSpec {
+  forward = gcl.fromSpec {
     nodes = {
       # Input: 32x32 grayscale (padded from 28x28 MNIST to center digits)
       input = "input_32x32";
@@ -110,8 +111,8 @@ in
   input_size = "32x32 grayscale";
   output_classes = 10;
 
-  total_layers = g.nodeCount forward;
-  total_edges = g.edgeCount forward;
+  total_layers = gcl.nodeCount forward;
+  total_edges = gcl.edgeCount forward;
   total_parameters = totalParams;
 
   parameters_by_layer = paramsByLayer;
@@ -129,9 +130,9 @@ in
 
   # Graph structure analysis
   # Strictly sequential except for C1->C3 skip (partial connectivity)
-  c3_inputs = g.inNeighbors "C3_conv" forward; # S2_pool AND C1_act
-  input_degree = g.degree "input" forward;
-  loss_indegree = g.inDegree "loss" forward;
+  c3_inputs = gcl.inNeighbors "C3_conv" forward; # S2_pool AND C1_act
+  input_degree = gcl.degree "input" forward;
+  loss_indegree = gcl.inDegree "loss" forward;
 
-  json = g.toGraphJSON forward;
+  json = gcl.toGraphJSON forward;
 }

@@ -3,8 +3,6 @@
 # re-export graph in `default.nix`, so the demos import the leaf modules
 # directly — the same way the playground prelude does.
 let
-  g = import ./graph.nix {};
-  gcl = import ./graph-combinators.nix { graph = g; };
   birds = import ./birds.nix {};
   oneNode = gcl.addNode "a" "node" gcl.emptyGraph;
 in {

@@ -1,6 +1,4 @@
 let
-  g = import ./graph.nix {};
-  gcl = import ./graph-combinators.nix { graph = g; };
   triangle = gcl.cycleGen { nodes = 3; prefix = "t"; };
   hubbed = gcl.hubRule triangle;
 in {

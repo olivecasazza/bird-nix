@@ -14,8 +14,6 @@
 # Total trainable parameters: 61,706
 # Original activation: scaled tanh; modern implementations use ReLU.
 let
-  g = import ./graph.nix { };
-  gcl = import ./graph-combinators.nix { graph = g; };
 
   # ── Layer nodes with exact LeCun 1998 specifications ─────────────
   forward = gcl.fromSpec {

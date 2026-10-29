@@ -11,8 +11,6 @@
 # Data from networkx.karate_club_graph() — 34 nodes, 78 undirected edges.
 # Faction labels: "Hi" = Mr. Hi's group, "Officer" = John A's group.
 let
-  g = import ./graph.nix { };
-  gcl = import ./graph-combinators.nix { graph = g; };
 
   # Faction membership from the original paper
   # Hi = sided with the instructor; Officer = sided with the president

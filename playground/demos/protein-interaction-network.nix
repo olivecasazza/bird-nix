@@ -14,8 +14,6 @@
 # Edge types from KEGG KGML: PPrel (phosphorylation, inhibition),
 # GErel (expression/transcriptional activation).
 let
-  g = import ./graph.nix { };
-  gcl = import ./graph-combinators.nix { graph = g; };
 
   # ── Sensor kinases (DNA damage response) ─────────────────────────
   # ATM (hsa:472) — activated by double-strand breaks

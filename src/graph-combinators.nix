@@ -4,10 +4,13 @@
 # of file imports break. To work around this, graph-combinators accepts
 # graph operations as a parameter instead of importing graph.nix directly.
 #
-# Usage:
+# Usage (standalone):
 #   let g = import ./graph.nix {};
 #       gcl = import ./graph-combinators.nix { graph = g; };
 #   in gcl.pathGen { nodes = 5; prefix = "n"; }
+#
+# The playground prelude binds `gcl` this way once, so demo sources use
+# gcl.* with no imports of their own.
 
 { graph }:
 

@@ -1,6 +1,4 @@
 let
-  g = import ./graph.nix {};
-  gcl = import ./graph-combinators.nix { graph = g; };
   path = gcl.pathGen { nodes = 3; prefix = "r"; };
   reversed = gcl.reverseEdgesRule path;
   # Original: r0→r1, r1→r2

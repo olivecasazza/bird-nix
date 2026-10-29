@@ -1,6 +1,4 @@
 let
-  g = import ./graph.nix {};
-  gcl = import ./graph-combinators.nix { graph = g; };
   grid = gcl.gridGen { rows = 3; cols = 3; prefix = "g"; };
 in {
   nodes = gcl.getNodeIds grid;

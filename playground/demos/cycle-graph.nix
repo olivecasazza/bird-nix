@@ -1,6 +1,4 @@
 let
-  g = import ./graph.nix {};
-  gcl = import ./graph-combinators.nix { graph = g; };
   cycle = gcl.cycleGen { nodes = 5; prefix = "c"; };
 in {
   nodes = gcl.getNodeIds cycle;

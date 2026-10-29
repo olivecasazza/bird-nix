@@ -17,8 +17,6 @@
 # This gives a 2-level fat-tree within groups and a fully-connected
 # graph between groups — the hallmark of dragonfly's O(log N) diameter.
 let
-  g = import ./graph.nix {};
-  gcl = import ./graph-combinators.nix { graph = g; };
 
   # Topology parameters (Frontier-inspired, scaled down)
   p = 4;   # compute nodes per switch

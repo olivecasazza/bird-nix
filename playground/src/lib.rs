@@ -235,6 +235,7 @@ fn eval_with_prelude(code: &str) -> Result<String, String> {
         r#"let
   birds = import ./birds.nix {{}};
   inherit (birds) I M K KI B C L W S V Y;
+  gcl = import ./graph-combinators.nix {{ graph = import ./graph.nix {{}}; }};
   __result = {};
 in builtins.deepSeq __result __result"#,
         code

@@ -1,6 +1,4 @@
 let
-  g = import ./graph.nix {};
-  gcl = import ./graph-combinators.nix { graph = g; };
   k4 = gcl.completeGen { nodes = 4; prefix = "v"; };
 in {
   nodes = gcl.getNodeIds k4;

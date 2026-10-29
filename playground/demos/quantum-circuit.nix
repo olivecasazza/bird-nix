@@ -16,8 +16,6 @@
 # This is the simplest non-trivial Grover circuit — one iteration suffices
 # for N=4 search space (2 qubits). Probability of measuring |11> = 1.
 let
-  g = import ./graph.nix { };
-  gcl = import ./graph-combinators.nix { graph = g; };
 
   # ── Wire input/output nodes (Qiskit DAGCircuit convention) ───────
   circuit = gcl.fromSpec {

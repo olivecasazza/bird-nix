@@ -14,8 +14,6 @@
 # Three regulatory control points: hexokinase (step 1),
 # phosphofructokinase-1 (step 3), pyruvate kinase (step 10).
 let
-  g = import ./graph.nix { };
-  gcl = import ./graph-combinators.nix { graph = g; };
 
   # ── Metabolite species (KEGG compound IDs) ───────────────────────
   pathway = gcl.fromSpec {

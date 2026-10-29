@@ -5,8 +5,6 @@
 # Every node has identical degree — the topology's symmetry gives
 # uniform bisection bandwidth and predictable worst-case latency.
 let
-  g = import ./graph.nix {};
-  gcl = import ./graph-combinators.nix { graph = g; };
   rows = 4; cols = 4;
   str = n: if n == 0 then "0" else if n == 1 then "1" else if n == 2 then "2" else if n == 3 then "3" else if n == 4 then "4" else if n == 5 then "5" else if n == 6 then "6" else if n == 7 then "7" else if n == 8 then "8" else "9";
   nid = r: c: "n" + str r + "_" + str c;

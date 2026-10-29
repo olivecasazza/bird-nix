@@ -1,6 +1,4 @@
 let
-  g = import ./graph.nix {};
-  gcl = import ./graph-combinators.nix { graph = g; };
   path = gcl.pathGen { nodes = 3; prefix = "p"; };
   # Subdivide the edge p0→p1
   subdivided = gcl.subdivideRule path "p0->p1";

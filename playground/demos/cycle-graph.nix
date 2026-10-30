@@ -1,8 +1,8 @@
 let
   cycle = gcl.cycleGen { nodes = 5; prefix = "c"; };
 in {
-  nodes = gcl.getNodeIds cycle;
-  edges = gcl.getEdgeIds cycle;
+  nodes = g.getNodeIds cycle;
+  edges = g.getEdgeIds cycle;
   # Last edge loops back: c4 → c0
-  hasLoopBack = gcl.hasEdge "c4->c0" cycle;
+  hasLoopBack = g.hasEdge "c4->c0" cycle;
 }

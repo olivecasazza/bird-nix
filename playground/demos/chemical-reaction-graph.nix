@@ -16,7 +16,7 @@
 let
 
   # ── Metabolite species (KEGG compound IDs) ───────────────────────
-  pathway = gcl.fromSpec {
+  pathway = g.fromSpec {
     nodes = {
       Glc = "metabolite"; # C00267 alpha-D-Glucose
       G6P = "metabolite"; # C00668 Glucose-6-phosphate
@@ -113,32 +113,32 @@ in
   source = "KEGG map00010 (Glycolysis / Gluconeogenesis)";
   net_equation = "Glucose + 2NAD+ + 2ADP + 2Pi -> 2Pyruvate + 2NADH + 2ATP + 2H2O";
 
-  total_species = gcl.nodeCount pathway;
-  total_reactions = gcl.edgeCount pathway;
+  total_species = g.nodeCount pathway;
+  total_reactions = g.edgeCount pathway;
 
   # Enzyme list with EC numbers
-  enzymes = gcl.filterNodes
+  enzymes = g.filterNodes
     (n:
-      (gcl.getNode n pathway).type == "enzyme"
+      (g.getNode n pathway).type == "enzyme"
     )
     pathway;
 
-  metabolite_nodes = gcl.filterNodes
+  metabolite_nodes = g.filterNodes
     (n:
-      (gcl.getNode n pathway).type == "metabolite"
+      (g.getNode n pathway).type == "metabolite"
     )
     pathway;
 
   # PFK1 is the committed/rate-limiting step (most regulated enzyme)
-  pfk1_substrates = gcl.inNeighbors "PFK1" pathway;
-  pfk1_products = gcl.neighbors "PFK1" pathway;
+  pfk1_substrates = g.inNeighbors "PFK1" pathway;
+  pfk1_products = g.neighbors "PFK1" pathway;
 
   # ATP is a hub — consumed by HK + PFK1, produced by PGK + PK
-  atp_consumers = gcl.neighbors "ATP" pathway;
-  atp_producers = gcl.inNeighbors "ATP" pathway;
+  atp_consumers = g.neighbors "ATP" pathway;
+  atp_producers = g.inNeighbors "ATP" pathway;
 
   # Step 4 (aldolase) is the only step that splits one substrate into two
-  aldo_products = gcl.neighbors "ALDO" pathway;
+  aldo_products = g.neighbors "ALDO" pathway;
 
-  json = gcl.toGraphJSON pathway;
+  json = g.toGraphJSON pathway;
 }

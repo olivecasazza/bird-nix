@@ -4,7 +4,7 @@ let
   path = gcl.pathGen { nodes = 4; prefix = "x"; };
   result = transform path;
 in {
-  original_nodes = gcl.nodeCount path;
-  result_nodes   = gcl.nodeCount result;  # +1 for hub
-  has_hub        = gcl.hasNode "hub" result;
+  original_nodes = g.nodeCount path;
+  result_nodes   = g.nodeCount result;  # +1 for hub
+  has_hub        = g.hasNode "hub" result;
 }

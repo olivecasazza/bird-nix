@@ -38,20 +38,20 @@ let
     if r >= rows then [] else vRow r 0 ++ vGrid (r + 1);
   vLinks = vGrid 0;
 
-  torus = gcl.fromSpec { nodes = nodes; edges = hLinks ++ vLinks; };
+  torus = g.fromSpec { nodes = nodes; edges = hLinks ++ vLinks; };
 in {
   dimensions = str rows + "x" + str cols + " torus";
-  total_routers = gcl.nodeCount torus;
-  total_links = gcl.edgeCount torus;
+  total_routers = g.nodeCount torus;
+  total_links = g.edgeCount torus;
 
   # Every node in a torus should have degree 4 (N, S, E, W)
   # Using undirected edges, each link counted once per endpoint
-  n0_0_degree = gcl.degree "n0_0" torus;
-  n2_3_degree = gcl.degree "n2_3" torus;
-  center_degree = gcl.degree "n1_1" torus;
+  n0_0_degree = g.degree "n0_0" torus;
+  n2_3_degree = g.degree "n2_3" torus;
+  center_degree = g.degree "n1_1" torus;
 
   # Wraparound verification: n0_0 connects to n0_3 (west) and n3_0 (north)
-  n0_0_neighbors = gcl.neighbors "n0_0" torus;
+  n0_0_neighbors = g.neighbors "n0_0" torus;
 
-  json = gcl.toGraphJSON torus;
+  json = g.toGraphJSON torus;
 }

@@ -2,7 +2,7 @@ let
   triangle = gcl.cycleGen { nodes = 3; prefix = "t"; };
   hubbed = gcl.hubRule triangle;
 in {
-  before = gcl.nodeCount triangle;
-  after  = gcl.nodeCount hubbed;
-  hubDegree = gcl.degree "hub" hubbed;
+  before = g.nodeCount triangle;
+  after  = g.nodeCount hubbed;
+  hubDegree = g.degree "hub" hubbed;
 }

@@ -20,7 +20,7 @@ let
   # ATR (hsa:545) — activated by single-strand breaks / replication stress
   # CHEK1 (hsa:1111) — checkpoint kinase 1, downstream of ATR
   # CHEK2 (hsa:11200) — checkpoint kinase 2, downstream of ATM
-  network = gcl.fromSpec {
+  network = g.fromSpec {
     nodes = {
       ATM = "kinase";
       ATR = "kinase";
@@ -139,21 +139,21 @@ let
 in
 {
   source = "KEGG hsa04115 (p53 signaling pathway)";
-  proteins = gcl.nodeCount network;
-  interactions = gcl.edgeCount network;
+  proteins = g.nodeCount network;
+  interactions = g.edgeCount network;
 
   # TP53 is the master hub — 17 transcriptional targets + 2 autoregulatory
-  tp53_targets = gcl.neighbors "TP53" network;
-  tp53_target_count = gcl.degree "TP53" network;
+  tp53_targets = g.neighbors "TP53" network;
+  tp53_target_count = g.degree "TP53" network;
 
   # Sensor kinases converge on TP53 (4 inputs)
-  tp53_activators = gcl.inNeighbors "TP53" network;
+  tp53_activators = g.inNeighbors "TP53" network;
 
   # MDM2 negative feedback: TP53 transcribes MDM2, MDM2 degrades TP53
-  mdm2_regulators = gcl.inNeighbors "MDM2" network;
+  mdm2_regulators = g.inNeighbors "MDM2" network;
 
   # Apoptosis cascade: BAX -> CYCS -> CASP9 -> CASP3
-  casp3_activators = gcl.inNeighbors "CASP3" network;
+  casp3_activators = g.inNeighbors "CASP3" network;
 
-  json = gcl.toGraphJSON network;
+  json = g.toGraphJSON network;
 }

@@ -1,12 +1,10 @@
-# The bird combinators and the graph library through direct single-hop
-# imports. The playground's tvix build cannot follow the multi-hop
-# re-export graph in `default.nix`, so the demos import the leaf modules
-# directly — the same way the playground prelude does.
+# Bird combinators and graph-library queries come from the playground
+# prelude: bare I/K/S... for birds, `g` for raw graph queries, `gcl`
+# for combinator-powered graph transforms.
 let
-  birds = import ./birds.nix {};
-  oneNode = gcl.addNode "a" "node" gcl.emptyGraph;
+  oneNode = g.addNode "a" "node" g.emptyGraph;
 in {
-  kestrelSays = birds.K "yes" "no";
-  skk         = birds.S birds.K birds.K 42;
-  nodeCount   = gcl.nodeCount oneNode;
+  kestrelSays = K "yes" "no";
+  skk         = S K K 42;
+  nodeCount   = g.nodeCount oneNode;
 }

@@ -9,8 +9,11 @@
 #       gcl = import ./graph-combinators.nix { graph = g; };
 #   in gcl.pathGen { nodes = 5; prefix = "n"; }
 #
-# The playground prelude binds `gcl` this way once, so demo sources use
-# gcl.* with no imports of their own.
+# The playground prelude binds `g` (raw graph library, for queries like
+# nodeCount) and `gcl` (this module — combinator transforms only) once,
+# so demo sources have no imports of their own. This module deliberately
+# does not re-export graph.nix: its operations are Bird/SK-calculus
+# derived, graph-library queries are not.
 
 { graph }:
 
@@ -300,13 +303,9 @@ let
   };
 
 in {
-  # ── Graph library operations (composable facade) ────────────────
-  inherit (graph) emptyGraph addNode addEdge removeNode removeEdge
-    getNodeIds getEdgeIds nodeCount edgeCount
-    hasNode hasEdge getNode getEdge
-    neighbors inNeighbors degree inDegree filterNodes edgesFrom edgesTo
-    merge isEmpty isSubgraphOf
-    fromSpec fromEdgeList toNodeList toEdgeList toGraphJSON;
+  # Combinator-powered graph operations only. Raw graph-library queries
+  # (nodeCount, getNodeIds, fromSpec, ...) live in graph.nix — the
+  # playground prelude binds it as `g` alongside `gcl`.
   inherit pathGen starGen completeGen cycleGen gridGen;
   inherit subdivideRule hubRule reverseEdgesRule contractRule composeOps;
   inherit identityGraph constGraph edgePair dupArg flipOps parallelMerge makeSelfLoop;

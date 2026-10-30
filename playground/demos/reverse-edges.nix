@@ -3,8 +3,8 @@ let
   reversed = gcl.reverseEdgesRule path;
   # Original: r0→r1, r1→r2
   # Reversed: r1→r0, r2→r1
-  origEdge = gcl.getEdge "r0->r1" path;
-  revEdge  = gcl.getEdge "r0->r1" reversed;
+  origEdge = g.getEdge "r0->r1" path;
+  revEdge  = g.getEdge "r0->r1" reversed;
 in {
   original = { src = origEdge.source; tgt = origEdge.target; };
   reversed = { src = revEdge.source;  tgt = revEdge.target; };

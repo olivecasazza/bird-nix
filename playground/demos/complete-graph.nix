@@ -1,7 +1,7 @@
 let
   k4 = gcl.completeGen { nodes = 4; prefix = "v"; };
 in {
-  nodes = gcl.getNodeIds k4;
-  edgeCount = gcl.edgeCount k4;  # 4*3 = 12 directed edges
-  v0_neighbors = gcl.neighbors "v0" k4;
+  nodes = g.getNodeIds k4;
+  edgeCount = g.edgeCount k4;  # 4*3 = 12 directed edges
+  v0_neighbors = g.neighbors "v0" k4;
 }

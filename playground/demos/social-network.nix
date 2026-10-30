@@ -15,7 +15,7 @@ let
   # Faction membership from the original paper
   # Hi = sided with the instructor; Officer = sided with the president
 
-  network = gcl.fromSpec {
+  network = g.fromSpec {
     nodes = {
       n0 = "Hi"; # Mr. Hi (instructor) — hub, degree 16
       n1 = "Hi";
@@ -160,20 +160,20 @@ let
 in
 {
   paper = "Zachary 1977, J. Anthropological Research 33(4):452-473";
-  members = gcl.nodeCount network;
-  interactions = gcl.edgeCount network;
+  members = g.nodeCount network;
+  interactions = g.edgeCount network;
 
   # The two faction leaders
-  mrHi_degree = gcl.degree "n0" network; # 16 — the instructor
-  johnA_degree = gcl.degree "n33" network; # 17 — the president
+  mrHi_degree = g.degree "n0" network; # 16 — the instructor
+  johnA_degree = g.degree "n33" network; # 17 — the president
 
   # Node 2 is the key bridge — high betweenness centrality
   # Connected to both factions despite being labeled "Hi"
-  node2_neighbors = gcl.neighbors "n2" network;
+  node2_neighbors = g.neighbors "n2" network;
 
   # The misclassified node: node 8 went with Mr. Hi but
   # min-cut predicts Officer faction
-  node8_neighbors = gcl.neighbors "n8" network;
+  node8_neighbors = g.neighbors "n8" network;
 
-  json = gcl.toGraphJSON network;
+  json = g.toGraphJSON network;
 }

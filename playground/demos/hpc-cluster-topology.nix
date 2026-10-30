@@ -111,7 +111,7 @@ let
     { from = "lustre_mds"; to = "sw_g0_s0"; id = "storage_link"; directed = false; }
   ];
 
-  cluster = gcl.fromSpec {
+  cluster = g.fromSpec {
     nodes = computeNodes ++ switchNodes ++ infraNodes;
     edges = nodeLinks ++ intraLinks ++ globalLinks ++ infraLinks;
   };
@@ -125,8 +125,8 @@ in {
   groups = numGroups;
   total_compute = p * a * numGroups;
 
-  total_nodes = gcl.nodeCount cluster;
-  total_links = gcl.edgeCount cluster;
+  total_nodes = g.nodeCount cluster;
+  total_links = g.edgeCount cluster;
 
   # Expected link counts:
   # Node-switch: 64, Intra-group: 4*C(4,2)=24, Inter-group: C(4,2)=6
@@ -137,11 +137,11 @@ in {
 
   # Switch connectivity analysis
   # Each switch connects to: p nodes + (a-1) intra-group + global links
-  sw_g0_s0_degree = gcl.degree "sw_g0_s0" cluster;
-  sw_g0_s0_neighbors = gcl.neighbors "sw_g0_s0" cluster;
+  sw_g0_s0_degree = g.degree "sw_g0_s0" cluster;
+  sw_g0_s0_neighbors = g.neighbors "sw_g0_s0" cluster;
 
   # A compute node connects only to its ToR switch
-  n_g0_s0_p0_degree = gcl.degree "n_g0_s0_p0" cluster;
+  n_g0_s0_p0_degree = g.degree "n_g0_s0_p0" cluster;
 
-  json = gcl.toGraphJSON cluster;
+  json = g.toGraphJSON cluster;
 }

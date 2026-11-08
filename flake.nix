@@ -6,7 +6,7 @@
     crane.url = "github:ipetkov/crane";
     flake-utils.url = "github:numtide/flake-utils";
     panel-kit = {
-      url = "github:ocasazza/panel-kit";
+      url = "github:ocasazza/panel-kit/72b0510a7b9dee1416d78555d87a313cc4127614";
       flake = false;
     };
     rust-overlay = {
@@ -100,13 +100,6 @@
             cargoToml = "${src}/playground/Cargo.toml";
             cargoLock = "${src}/playground/Cargo.lock";
             sourceRoot = "source/playground";
-            # Cargo.toml uses `../../panel-kit` for local development from
-            # bird-nix/playground. Recreate that sibling checkout in crane's
-            # build dir so the same path works in the Nix sandbox.
-            prePatch = ''
-              cp -rL ${panel-kit.outPath} ../../panel-kit
-              chmod -R u+w ../../panel-kit
-            '';
           };
 
           cargoArtifacts = craneLib.buildDepsOnly (commonArgs // { doCheck = false; });

@@ -415,11 +415,12 @@ mod ui {
     use dioxus::events::{Key, KeyboardEvent, PointerEvent as DioxusPointerEvent};
     use dioxus::prelude::*;
     use panel_kit::editor::MonacoEditor;
+    use panel_kit::input::use_tile_drag_frames;
     use panel_kit::widgets::{dock, root};
     use panel_kit::workspace::{
-        handle_key, handle_pointer_move, handle_pointer_up, handle_wheel, mount_viewport_observer,
-        panel_element, project_workspace, use_panel_workspace, workspace_area_class,
-        workspace_event_handler, WorkspaceOptions,
+        handle_key, handle_pointer_cancel, handle_pointer_move, handle_pointer_up, handle_wheel,
+        mount_viewport_observer, panel_element, project_workspace, use_panel_workspace,
+        workspace_area_class, workspace_event_handler, WorkspaceOptions,
     };
     use panel_kit::{LayoutBuilder, PanelKind, PanelWin, WinState, CSS};
     use panel_kit_core::PanelCatalog;
@@ -888,6 +889,11 @@ K "yes" "no""#;
 
         let emit = workspace_event_handler(&workspace);
         let snapshot = workspace.snapshot.read();
+        // Core reads no clock: a lifted or landing tile only moves while ticked.
+        use_tile_drag_frames(
+            snapshot.tile_drag.is_some_and(|tile| tile.animating()),
+            emit,
+        );
         let mut scratch = workspace.scratch.borrow_mut();
         let frame = project_workspace(&workspace, &snapshot, &mut scratch);
         let root_class = root::root_class(&frame);
@@ -903,6 +909,7 @@ K "yes" "no""#;
 
         let pointer_move = workspace.clone();
         let pointer_up = workspace.clone();
+        let pointer_cancel = workspace.clone();
         let wheel = workspace.clone();
         let keys = workspace.clone();
         let mode_emit = emit;
@@ -915,6 +922,7 @@ K "yes" "no""#;
                 tabindex: "0",
                 onpointermove: move |e: DioxusPointerEvent| handle_pointer_move(&pointer_move, &e),
                 onpointerup: move |e: DioxusPointerEvent| handle_pointer_up(&pointer_up, &e),
+                onpointercancel: move |e: DioxusPointerEvent| handle_pointer_cancel(&pointer_cancel, &e),
                 onwheel: move |e: WheelEvent| handle_wheel(&wheel, &e),
                 onkeydown: move |e: KeyboardEvent| handle_key(&keys, &e),
                 header { class: "topbar",
